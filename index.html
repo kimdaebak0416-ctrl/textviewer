@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-title" content="Text Viewer">
+    <meta name="apple-mobile-web-app-title" content="고성능 대용량 텍스트 파일 뷰어">
     <meta name="apple-mobile-web-app-status-bar-style" id="appleStatusBarMeta" content="black">
     <meta name="theme-color" id="themeColorMeta" content="#000000">
     <link rel="apple-touch-icon" id="appleTouchIcon" sizes="180x180" href="">
     <link rel="icon" id="appFavicon" type="image/png" sizes="180x180" href="">
-    <title>Text Viewer</title>
+    <title>고성능 대용량 텍스트 파일 뷰어</title>
 
     <!-- 한글 바탕(Noto Serif KR) 웹폰트 로드 -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -786,7 +786,7 @@
         }
 
         /* =========================================================
-           가상 스크롤 프레임 & 뷰포트 (상하 여백 + 줄 높이 정수 배 정렬로 끝부분 잘림 방지)
+           가상 스크롤 프레임 & 뷰포트 (줄 높이 정수 배 스냅으로 끝부분 잘림 방지)
            ========================================================= */
         .vs-frame {
             flex: 1;
@@ -834,7 +834,7 @@
             min-width: 100%;
         }
 
-        /* 개별 텍스트 행 (줄 단위 하이라이트 없음, 좌우 여백 --pad-h 적용) */
+        /* 개별 텍스트 행 */
         .vs-row {
             display: flex;
             align-items: stretch;
@@ -1078,84 +1078,26 @@
             pointer-events: none;
         }
 
-        /* 하단 페이지 컨트롤 바 */
+        /* 전체화면 책 넘김 모드 전용 미니멀 하단 페이지 표시 (일반 모드에서는 숨김) */
         .page-footer-bar {
+            display: none;
             flex-shrink: 0;
-            display: flex;
             align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-            padding: 6px calc(14px + env(safe-area-inset-right)) 6px calc(14px + env(safe-area-inset-left));
-            border-top: 1px solid var(--border-color);
+            justify-content: center;
+            padding: 6px calc(14px + env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left));
             background-color: var(--bg-surface);
             user-select: none;
             -webkit-user-select: none;
             z-index: 22;
         }
 
-        .page-bar-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-            min-height: 32px;
-            padding: 0 12px;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-            background-color: var(--bg-subtle);
-            color: var(--text-primary);
-            font-family: inherit;
-            font-size: 12.5px;
-            font-weight: 600;
-            cursor: pointer;
-            touch-action: manipulation;
-            transition: background-color 0.15s, transform 0.1s;
-        }
-
-        .page-bar-btn:hover:not(:disabled) {
-            background-color: var(--bg-hover);
-        }
-
-        .page-bar-btn:active:not(:disabled) {
-            transform: scale(0.97);
-        }
-
-        .page-bar-btn:disabled {
-            opacity: 0.35;
-            cursor: not-allowed;
-        }
-
-        .page-indicator-wrap {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 1px;
-            min-width: 0;
-        }
-
         .page-indicator-text {
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-            font-size: 12.5px;
-            font-weight: 700;
-            color: var(--text-primary);
-            white-space: nowrap;
-        }
-
-        .page-indicator-hint {
-            font-size: 11px;
+            font-size: 12px;
+            font-weight: 600;
             color: var(--text-muted);
             white-space: nowrap;
-        }
-
-        /* 전체화면 모드에서의 하단 페이지 바: 미니멀하게 표시 */
-        .app-shell.is-fullscreen .page-footer-bar {
-            border-top-color: transparent;
-            padding-bottom: max(8px, env(safe-area-inset-bottom));
-            opacity: 0.72;
-        }
-
-        .app-shell.is-fullscreen .page-indicator-hint {
-            display: none;
+            letter-spacing: 0.01em;
         }
 
         /* 글꼴 패밀리 클래스 */
@@ -1222,6 +1164,20 @@
         .app-shell.is-fullscreen .resume-banner,
         .app-shell.is-fullscreen .statusbar {
             display: none !important;
+        }
+
+        /* 전체화면에서 상단 safe-area(아이폰 노치/상태바)와 본문 겹침 방지 */
+        .app-shell.is-fullscreen .vs-frame {
+            padding-top: calc(var(--pad-v, 12px) + env(safe-area-inset-top));
+            padding-bottom: calc(var(--pad-v, 12px) + env(safe-area-inset-bottom));
+        }
+
+        .app-shell.is-fullscreen .page-content {
+            padding-top: calc(var(--pad-v, 12px) + env(safe-area-inset-top));
+        }
+
+        .app-shell.is-fullscreen .page-footer-bar {
+            display: flex;
         }
 
         .exit-fullscreen-btn {
@@ -1475,7 +1431,7 @@
         }
 
         /* =========================================================
-           7. 하단 상태바 & 줄 이동(Go to Line) 모달
+           7. 하단 상태바 & 줄/페이지 이동(Ctrl+G) 모달
            ========================================================= */
         .statusbar {
             background-color: var(--bg-surface);
@@ -1575,7 +1531,7 @@
             text-align: right;
         }
 
-        /* 줄 이동(Ctrl+G) 모달 */
+        /* 줄/페이지 이동(Ctrl+G) 모달 */
         .modal-backdrop {
             position: fixed;
             inset: 0;
@@ -1687,19 +1643,20 @@
                 font-size: 13px;
             }
 
+            .btn-sm {
+                min-height: 34px;
+                padding: 0 10px;
+                font-size: 12.5px;
+            }
+
             .btn-icon {
                 width: 40px;
                 min-width: 40px;
             }
 
-            /* 모바일에서는 좌우 플로팅 화살표 대신 탭·스와이프 + 하단 바 사용 */
+            /* 모바일에서는 좌우 플로팅 화살표 대신 탭·스와이프 사용 */
             .page-nav-edge {
                 display: none;
-            }
-
-            .page-bar-btn {
-                min-height: 36px;
-                padding: 0 14px;
             }
 
             /* 모바일 검색 드롭다운 바 */
@@ -1840,11 +1797,12 @@
                 <span id="bookmarkBadge" class="count-pill">0</span>
             </button>
 
-            <!-- 데스크톱 전체 복사 아이콘 -->
-            <button id="copyAllBtn" class="btn btn-icon hide-mobile" title="전체 텍스트 클립보드 복사">
+            <!-- 데스크톱 전용 현재 줄 북마크 토글 버튼 -->
+            <button id="desktopCurrentBookmarkBtn" class="btn hide-mobile current-bm-btn" title="현재 화면 최상단 줄 북마크 추가/해제" disabled>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
                 </svg>
+                <span>현재 줄 북마크</span>
             </button>
 
             <!-- 보기 설정 토글 -->
@@ -1877,13 +1835,13 @@
          읽기 환경 설정 바 (읽기 방식 / 넘김 효과 / 테마 / 글꼴 / 크기 / 줄간격 / 여백 / 표시 옵션)
          ========================================================= -->
     <div id="settingsBar" class="settings-bar hidden">
-        <!-- 모바일 전용 상단 행: 좌측 인코딩 / 우측 전체 복사 -->
+        <!-- 모바일 전용 상단 행: 좌측 인코딩 / 우측 현재 줄 북마크 -->
         <div class="setting-item show-mobile-only" style="width:100%; justify-content:space-between; padding-bottom:6px; border-bottom:1px solid var(--border-color);">
             <div class="segment-group" title="문자 인코딩 전환">
                 <button class="segment-btn encoding-btn active" data-encoding="utf-8">UTF-8</button>
                 <button class="segment-btn encoding-btn" data-encoding="euc-kr">EUC-KR</button>
             </div>
-            <button id="mobileCopyAllBtn" class="btn btn-sm">전체 복사</button>
+            <button id="mobileCurrentBookmarkBtn" class="btn btn-sm current-bm-btn" title="현재 화면 최상단 줄 북마크 추가/해제" disabled>현재 줄 북마크</button>
         </div>
 
         <!-- 읽기 방식 (스크롤 / 책 넘김) + 페이지 전환 애니메이션 토글 -->
@@ -2034,7 +1992,7 @@
                             <line x1="16" y1="17" x2="8" y2="17"/>
                         </svg>
                     </div>
-                    <h1 class="empty-title">Text Viewer</h1>
+                    <h1 class="empty-title">고성능 대용량 텍스트 파일 뷰어</h1>
                     <p class="empty-desc">
                         가상 스크롤과 책 넘김(페이지) 모드를 모두 지원합니다. 수십 MB 이상의 장편 소설·로그·CSV 파일을 Mac, iPad, iPhone Safari에서 쾌적하게 읽고 북마크·읽은 위치를 자동 저장하세요.
                     </p>
@@ -2063,7 +2021,7 @@
                     <div id="pageMeasureBox" class="page-measure-box" aria-hidden="true"></div>
                 </div>
 
-                <!-- 데스크톱 좌우 플로팅 넘김 버튼 -->
+                <!-- 데스크톱 좌우 플로팅 넘김 버튼 (모바일 숨김) -->
                 <button id="pagePrevEdgeBtn" class="page-nav-edge page-nav-prev" title="이전 페이지 (←)" aria-label="이전 페이지">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="15 18 9 12 15 6"/>
@@ -2075,24 +2033,9 @@
                     </svg>
                 </button>
 
-                <!-- 하단 페이지 컨트롤 바 -->
+                <!-- 전체화면 책 넘김 모드 전용 미니멀 하단 페이지 표시 (이전/다음 버튼 없음) -->
                 <div id="pageFooterBar" class="page-footer-bar">
-                    <button id="pageBarPrevBtn" class="page-bar-btn" title="이전 페이지 (←)">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="15 18 9 12 15 6"/>
-                        </svg>
-                        <span>이전</span>
-                    </button>
-                    <div class="page-indicator-wrap">
-                        <span id="pageIndicatorText" class="page-indicator-text">1 / 1 페이지</span>
-                        <span class="page-indicator-hint">좌우 탭 · 스와이프 · 방향키로 넘김</span>
-                    </div>
-                    <button id="pageBarNextBtn" class="page-bar-btn" title="다음 페이지 (→)">
-                        <span>다음</span>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="9 18 15 12 9 6"/>
-                        </svg>
-                    </button>
+                    <span id="pageIndicatorText" class="page-indicator-text">1 / 1 페이지 · 0.0%</span>
                 </div>
             </div>
 
@@ -2142,7 +2085,7 @@
     </div>
 
     <!-- =========================================================
-         하단 상태바
+         하단 상태바 (읽기 방식에 따라 줄 / 페이지 표시 자동 전환)
          ========================================================= -->
     <footer class="statusbar">
         <div class="status-left">
@@ -2156,10 +2099,10 @@
         </div>
 
         <div class="status-right">
-            <!-- 줄 이동 (Ctrl+G) 모달 트리거 -->
+            <!-- 줄/페이지 이동 (Ctrl+G) 모달 트리거 -->
             <button id="openGotoModalBtn" class="status-clickable" title="특정 줄 번호로 바로 이동 (Ctrl+G)" disabled>
-                <span>현재 <strong id="statCurrentLine">0</strong> / 총 <strong id="statTotalLines">0</strong>줄</span>
-                <span style="color:var(--accent); font-weight:600; margin-left:3px;">줄 이동</span>
+                <span>현재 <strong id="statCurrentVal">0</strong> / 총 <strong id="statTotalVal">0</strong><span id="statUnitLabel">줄</span></span>
+                <span id="statActionLabel" style="color:var(--accent); font-weight:600; margin-left:3px;">줄 이동</span>
             </button>
 
             <span class="status-divider hide-mobile"></span>
@@ -2184,7 +2127,7 @@
         <span>전체화면 종료</span>
     </button>
 
-    <!-- 줄 이동 (Ctrl+G) 모달 -->
+    <!-- 줄/페이지 이동 (Ctrl+G) 모달 -->
     <div id="gotoModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="gotoModalTitle">
         <div class="modal-card">
             <div id="gotoModalTitle" class="modal-title">특정 줄로 이동 (Ctrl+G)</div>
@@ -2204,7 +2147,9 @@
 <script>
 /**
  * ============================================================================
- * Text Viewer - 대용량 가상 스크롤 & 책 넘김(페이지) 듀얼 모드 텍스트 뷰어
+ * 고성능 대용량 텍스트 파일 뷰어 (Text Viewer)
+ * - 가상 스크롤(Virtual Scrolling) & 책 넘김(Page) 듀얼 모드
+ * - 현재 줄 북마크, 전체화면 동기화, 오프스크린 정밀 페이지 분할, Safari 최적화
  * ============================================================================
  */
 (function () {
@@ -2214,8 +2159,6 @@
     const MAX_SCROLL_HEIGHT = 12000000;
     // 뷰포트 상하 여유 버퍼 줄 수
     const OVERSCAN_LINES = 18;
-    // 전체 복사 안전 용량 상한 (10MB)
-    const MAX_COPY_BYTES = 10 * 1024 * 1024;
     // 비동기 검색 블록 크기 (~512KB)
     const SEARCH_BLOCK_CHARS = 524288;
     // 페이지 히스토리 스택 최대 크기
@@ -2244,64 +2187,64 @@
 
     // 전역 상태
     const state = {
-        fileBlob: null,           // File 또는 Blob 참조 (ArrayBuffer 상주 메모리 절감)
-        fileName: '',             // 파일명
-        fileSize: 0,              // 바이트 크기
-        encoding: 'utf-8',        // 'utf-8' | 'euc-kr'
-        rawText: '',              // 디코딩된 전체 문자열
-        lineStarts: null,         // Int32Array: 각 줄의 시작 문자 인덱스
-        lineEnds: null,           // Int32Array: 각 줄의 끝 문자 인덱스 (\r\n 제외)
-        totalLines: 0,            // 총 줄 수
-        parseTimeMs: 0,           // 파싱 시간(ms)
+        fileBlob: null,               // File 또는 Blob 참조 (RAM 이중 점유 방지)
+        fileName: '',                 // 파일명
+        fileSize: 0,                  // 바이트 크기
+        encoding: 'utf-8',            // 'utf-8' | 'euc-kr'
+        rawText: '',                  // 디코딩된 전체 문자열
+        lineStarts: null,             // Int32Array: 각 줄의 시작 문자 인덱스
+        lineEnds: null,               // Int32Array: 각 줄의 끝 문자 인덱스 (\r\n 제외)
+        totalLines: 0,                // 총 줄 수
+        parseTimeMs: 0,               // 파싱 시간(ms)
 
         // 보기 설정 (localStorage 자동 저장/복원 대상)
-        viewMode: 'scroll',       // 'scroll' | 'page'
-        pageAnimation: true,      // 책 넘김 전환 애니메이션 켜기/끄기
-        theme: 'dark',            // 기본값: 다크
-        fontFamily: 'serif',      // 기본값: 바탕
+        viewMode: 'scroll',           // 'scroll' | 'page'
+        pageAnimation: true,          // 책 넘김 전환 애니메이션 켜기/끄기
+        theme: 'dark',                // 기본값: 다크
+        fontFamily: 'serif',          // 기본값: 바탕
         fontSize: DEFAULT_FONT_SIZE,  // 기본값: 23px (12 ~ 32)
-        lineHeightRatio: 1.75,    // 줄 간격 배수
+        lineHeightRatio: 1.75,        // 기본값: 보통 1.75
         paddingV: DEFAULT_PADDING_V,  // 기본값: 12px (0 ~ 80, step 4)
         paddingH: DEFAULT_PADDING_H,  // 기본값: 24px (0 ~ 80, step 4)
-        showLineNumbers: true,    // 줄 번호 표시 여부
-        showBookmarkIcons: true,  // 거터 북마크 아이콘 표시 여부
-        wordWrap: false,          // 자동 줄바꿈 여부 (스크롤 모드 전용, 페이지 모드는 자동 적용)
-        isFullscreen: false,      // 전체화면(몰입 읽기) 모드 여부
+        showLineNumbers: true,        // 줄 번호 표시 여부
+        showBookmarkIcons: true,      // 거터 북마크 아이콘 표시 여부
+        wordWrap: false,              // 자동 줄바꿈 여부 (스크롤 모드 전용, 책 넘김은 자동 적용)
+        isFullscreen: false,          // 전체화면(몰입 읽기) 모드 여부
 
         // 가상 스크롤 메트릭
         baseRowHeight: 40,
-        prefixHeights: null,      // Float64Array (가변 높이 누적 오프셋)
+        prefixHeights: null,          // Float64Array (가변 높이 누적 오프셋)
         logicalTotalHeight: 0,
         virtualScrollHeight: 0,
         scaleFactor: 1,
 
         // 책 넘김(페이지) 상태
         page: {
-            startLine: 0,         // 현재 페이지 시작 0-based 줄 인덱스
-            startOffset: 0,       // 현재 시작 줄 내부 문자 오프셋
-            nextLine: 0,          // 다음 페이지 시작 0-based 줄 인덱스
-            nextOffset: 0,        // 다음 페이지 시작 줄 내부 오프셋
-            endLine: 0,           // 현재 페이지 마지막 표시 줄 인덱스
+            startLine: 0,             // 현재 페이지 시작 0-based 줄 인덱스
+            startOffset: 0,           // 현재 시작 줄 내부 문자 오프셋
+            nextLine: 0,              // 다음 페이지 시작 0-based 줄 인덱스
+            nextOffset: 0,            // 다음 페이지 시작 줄 내부 오프셋
+            endLine: 0,               // 현재 페이지 마지막 표시 줄 인덱스
             hasPrev: false,
             hasNext: false,
-            history: [],          // 이전 페이지 복원 스택 [{ line, offset }]
+            history: [],              // 이전 페이지 복원 스택 [{ line, offset }]
             estimatedPage: 1,
             estimatedTotalPages: 1
         },
 
         // 검색 상태
         searchQuery: '',
-        caseSensitive: false,     // localStorage 자동 저장/복원 대상
+        caseSensitive: false,         // localStorage 자동 저장/복원 대상
         matchLineIndices: [],
         currentMatchCursor: -1,
-        searchToken: 0,           // 비동기 검색 취소용 토큰
+        searchToken: 0,               // 비동기 검색 취소용 토큰
 
         // 북마크 & 읽은 위치 상태
-        bookmarks: new Map(),     // key: 1-based lineNumber (number), value: { line: number, memo: string }
-        activeBookmarkLine: null, // F2 / Shift+F2 순회 기준 북마크 줄 번호
-        pendingResumeLine: null,  // 파일 재오픈 시 복원 제안할 줄 번호(1-based)
-        clearConfirmTimer: null,  // 전체 삭제 2단계 확인 타이머
-        suppressSaveUntil: 0,     // 파일 초기 로드 시 자동 저장 방지 타임스탬프
+        bookmarks: new Map(),         // key: 1-based lineNumber, value: { line, memo }
+        activeBookmarkLine: null,     // F2 / Shift+F2 순회 기준 북마크 줄 번호
+        pendingResumeLine: null,      // 파일 재오픈 시 복원 제안할 줄 번호(1-based)
+        clearConfirmTimer: null,      // 전체 삭제 2단계 확인 타이머
+        suppressSaveUntil: 0,         // 파일 초기 로드 시 자동 저장 방지 타임스탬프
 
         // 렌더링 스케줄링
         rafPending: false,
@@ -2334,9 +2277,10 @@
 
         toggleBookmarkDrawerBtn: document.getElementById('toggleBookmarkDrawerBtn'),
         bookmarkBadge: document.getElementById('bookmarkBadge'),
+        desktopCurrentBookmarkBtn: document.getElementById('desktopCurrentBookmarkBtn'),
+        mobileCurrentBookmarkBtn: document.getElementById('mobileCurrentBookmarkBtn'),
+        currentBookmarkBtns: document.querySelectorAll('.current-bm-btn'),
 
-        copyAllBtn: document.getElementById('copyAllBtn'),
-        mobileCopyAllBtn: document.getElementById('mobileCopyAllBtn'),
         toggleSettingsBtn: document.getElementById('toggleSettingsBtn'),
         settingsBar: document.getElementById('settingsBar'),
         fullscreenBtn: document.getElementById('fullscreenBtn'),
@@ -2385,8 +2329,6 @@
         pagePrevEdgeBtn: document.getElementById('pagePrevEdgeBtn'),
         pageNextEdgeBtn: document.getElementById('pageNextEdgeBtn'),
         pageFooterBar: document.getElementById('pageFooterBar'),
-        pageBarPrevBtn: document.getElementById('pageBarPrevBtn'),
-        pageBarNextBtn: document.getElementById('pageBarNextBtn'),
         pageIndicatorText: document.getElementById('pageIndicatorText'),
 
         drawerBackdrop: document.getElementById('drawerBackdrop'),
@@ -2403,12 +2345,15 @@
         statEncoding: document.getElementById('statEncoding'),
         statParseTime: document.getElementById('statParseTime'),
         openGotoModalBtn: document.getElementById('openGotoModalBtn'),
-        statCurrentLine: document.getElementById('statCurrentLine'),
-        statTotalLines: document.getElementById('statTotalLines'),
+        statCurrentVal: document.getElementById('statCurrentVal'),
+        statTotalVal: document.getElementById('statTotalVal'),
+        statUnitLabel: document.getElementById('statUnitLabel'),
+        statActionLabel: document.getElementById('statActionLabel'),
         progressFill: document.getElementById('progressFill'),
         statProgress: document.getElementById('statProgress'),
 
         gotoModal: document.getElementById('gotoModal'),
+        gotoModalTitle: document.getElementById('gotoModalTitle'),
         gotoModalSub: document.getElementById('gotoModalSub'),
         gotoModalInput: document.getElementById('gotoModalInput'),
         gotoModalCancelBtn: document.getElementById('gotoModalCancelBtn'),
@@ -2418,8 +2363,36 @@
     };
 
     /* ========================================================================
-       전체화면(몰입 읽기) 모드 제어 (iPhone Safari + 데스크톱/iPad 네이티브 공용)
+       전체화면(몰입 읽기) 모드 제어 및 뷰포트 재계산 동기화
        ======================================================================== */
+    let fullscreenSyncTimer = null;
+
+    function syncAfterFullscreenTransition() {
+        syncVisualViewportHeight();
+        syncResponsiveLayout();
+
+        const runReflow = () => {
+            if (state.totalLines === 0) return;
+            recalculateMetrics();
+            if (state.viewMode === 'page') {
+                // 현재 시작 줄(startLine, startOffset)을 앵커로 유지하며 새 화면 높이에 맞춰 재계산
+                state.page.history = [];
+                renderPageMode(null);
+            } else {
+                syncScrollViewportHeight();
+                state.lastRenderedStart = -1;
+                renderVisibleRows();
+                updateScrollStatus();
+            }
+        };
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(runReflow);
+        });
+        clearTimeout(fullscreenSyncTimer);
+        fullscreenSyncTimer = setTimeout(runReflow, 180);
+    }
+
     function enterFullscreen() {
         if (state.isFullscreen) return;
         state.isFullscreen = true;
@@ -2437,7 +2410,7 @@
             } catch (e) {}
         }
 
-        scheduleViewportReflow(true);
+        syncAfterFullscreenTransition();
     }
 
     function exitFullscreen(exitNative = true) {
@@ -2456,13 +2429,16 @@
             } catch (e) {}
         }
 
-        scheduleViewportReflow(true);
+        syncAfterFullscreenTransition();
     }
 
     function handleNativeFullscreenChange() {
         const isNativeFull = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
         if (!isNativeFull && state.isFullscreen) {
             exitFullscreen(false);
+        } else {
+            // 네이티브 전체화면 진입/전환 완료 후 정확한 pageStage 높이로 재측정
+            syncAfterFullscreenTransition();
         }
     }
 
@@ -2527,15 +2503,31 @@
     }
 
     /**
-     * 스크롤 뷰포트 높이를 한 줄 높이(baseRowHeight)의 정수 배로 맞춰
-     * 화면 하단에 다음 줄 윗부분이 2~3px 잘려 보이는 현상을 방지
+     * 요소의 실제 상하 패딩 합(safe-area 포함)을 계산하여 반환
+     */
+    function getVerticalPaddingSum(el, fallbackSingle) {
+        try {
+            const cs = window.getComputedStyle(el);
+            const pt = parseFloat(cs.paddingTop);
+            const pb = parseFloat(cs.paddingBottom);
+            if (Number.isFinite(pt) && Number.isFinite(pb)) {
+                return pt + pb;
+            }
+        } catch (e) {}
+        return fallbackSingle * 2;
+    }
+
+    /**
+     * 스크롤 뷰포트 높이를 한 줄 높이(baseRowHeight)의 정수 배로 스냅하여
+     * 화면 끝부분에 다음 줄 윗부분이 잘려 보이는 현상 방지
      */
     function syncScrollViewportHeight() {
         if (els.vsFrame.classList.contains('hidden')) return;
         const frameH = els.vsFrame.clientHeight;
         if (frameH <= 0) return;
 
-        const availH = Math.max(state.baseRowHeight, frameH - (state.paddingV * 2));
+        const padSum = getVerticalPaddingSum(els.vsFrame, state.paddingV);
+        const availH = Math.max(state.baseRowHeight, frameH - padSum);
         const snappedH = Math.max(state.baseRowHeight, Math.floor(availH / state.baseRowHeight) * state.baseRowHeight);
         els.vsViewport.style.height = `${snappedH}px`;
     }
@@ -2555,6 +2547,43 @@
         } else {
             syncScrollViewportHeight();
         }
+    }
+
+    /**
+     * 하단 상태바의 줄/페이지 단위 및 이동 라벨을 현재 읽기 방식에 맞춰 동기화
+     */
+    function syncStatusModeLabels() {
+        const isPage = state.viewMode === 'page';
+        els.statUnitLabel.textContent = isPage ? '페이지' : '줄';
+        els.statActionLabel.textContent = isPage ? '페이지 이동' : '줄 이동';
+        els.openGotoModalBtn.title = isPage
+            ? '특정 페이지로 바로 이동 (Ctrl+G)'
+            : '특정 줄 번호로 바로 이동 (Ctrl+G)';
+
+        if (state.totalLines === 0) {
+            els.statCurrentVal.textContent = '0';
+            els.statTotalVal.textContent = '0';
+        }
+    }
+
+    /**
+     * 현재 줄 북마크 버튼(데스크톱/모바일)의 활성화·북마크 상태 동기화
+     */
+    function syncCurrentLineBookmarkUI() {
+        const hasFile = state.totalLines > 0;
+        const currentLineNum = hasFile ? getCurrentTopLineIndex() + 1 : 0;
+        const isBookmarked = hasFile && state.bookmarks.has(currentLineNum);
+
+        els.currentBookmarkBtns.forEach(btn => {
+            btn.disabled = !hasFile;
+            btn.classList.toggle('btn-bookmark', isBookmarked);
+            btn.classList.toggle('active', isBookmarked);
+            btn.title = !hasFile
+                ? '파일을 열면 현재 줄을 북마크할 수 있습니다.'
+                : (isBookmarked
+                    ? `현재 줄(${currentLineNum.toLocaleString()}줄) 북마크 해제`
+                    : `현재 줄(${currentLineNum.toLocaleString()}줄) 북마크 추가`);
+        });
     }
 
     function syncPreferencesUI() {
@@ -2603,6 +2632,9 @@
 
         // 검색 대소문자 구분
         els.caseSensitiveBtn.classList.toggle('active', state.caseSensitive);
+
+        // 상태바 모드 라벨
+        syncStatusModeLabels();
     }
 
     function loadUserPreferences() {
@@ -2975,6 +3007,7 @@
         const key = getStorageKey();
         if (!key) {
             renderBookmarkDrawer();
+            syncCurrentLineBookmarkUI();
             return;
         }
 
@@ -2982,6 +3015,7 @@
             const raw = localStorage.getItem(key);
             if (!raw) {
                 renderBookmarkDrawer();
+                syncCurrentLineBookmarkUI();
                 return;
             }
             const parsed = JSON.parse(raw);
@@ -3010,10 +3044,11 @@
         }
 
         renderBookmarkDrawer();
+        syncCurrentLineBookmarkUI();
     }
 
     /* ========================================================================
-       북마크 관리 (토글, 메모, 순회, 전체 삭제, 사이드 패널/바텀 시트 UI)
+       북마크 관리 (토글, 현재 줄 북마크, 메모, 순회, 전체 삭제, 드로어 UI)
        ======================================================================== */
     function renderActiveView(animDir = null) {
         if (state.totalLines === 0) return;
@@ -3046,7 +3081,14 @@
 
         saveFileMetadata();
         renderBookmarkDrawer();
+        syncCurrentLineBookmarkUI();
         renderActiveView(null);
+    }
+
+    function toggleCurrentTopLineBookmark() {
+        if (state.totalLines === 0) return;
+        const lineNum = getCurrentTopLineIndex() + 1;
+        toggleBookmark(lineNum);
     }
 
     function updateBookmarkMemo(lineNum, memoText) {
@@ -3140,7 +3182,7 @@
                         <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
                     </svg>
                     <div style="font-weight:600; color:var(--text-primary); margin-bottom:4px;">저장된 북마크가 없습니다</div>
-                    <div>왼쪽 줄 번호 영역을 터치·클릭해<br>원하는 줄에 북마크를 추가하세요.</div>
+                    <div>왼쪽 줄 번호 영역 또는 [현재 줄 북마크] 버튼으로<br>원하는 위치에 북마크를 추가하세요.</div>
                 </div>
             `;
             return;
@@ -3252,7 +3294,7 @@
                     els.statFileSize.textContent = formatBytes(state.fileSize);
                     els.statEncoding.textContent = state.encoding.toUpperCase();
                     els.statParseTime.textContent = `파싱: ${state.parseTimeMs}ms`;
-                    els.statTotalLines.textContent = state.totalLines.toLocaleString();
+                    syncStatusModeLabels();
 
                     recalculateMetrics();
 
@@ -3282,6 +3324,7 @@
                     state.lastRenderedStart = -1;
                     state.lastRenderedEnd = -1;
                     renderActiveView(null);
+                    syncCurrentLineBookmarkUI();
 
                     setLoading(false);
                     showToast(`${state.totalLines.toLocaleString()}줄 로드 완료 (${state.parseTimeMs}ms)`);
@@ -3295,36 +3338,35 @@
     }
 
     /**
-     * 가이드 문서 생성 (스크롤/책 넘김/애니메이션/글꼴/여백/전체화면 테스트용)
+     * 가이드 문서 생성 (스크롤/책 넘김/애니메이션/북마크/전체화면 테스트용)
      */
     function generateMiniSample() {
         const sampleText = [
-            '=== Text Viewer 가이드 문서 ===',
+            '=== 고성능 대용량 텍스트 파일 뷰어 가이드 ===',
             '',
             '1. 읽기 방식 전환 (스크롤 / 책 넘김) 및 넘김 효과',
             '   상단 [보기 설정]에서 스크롤 형식과 책 넘김(페이지) 형식 중 원하는 방식을 선택할 수 있습니다.',
             '   [넘김 효과] 버튼으로 페이지 전환 애니메이션을 켜거나 끌 수 있으며, 모드를 전환해도 현재 읽고 있던 줄 위치가 그대로 유지됩니다.',
+            '   하단 상태바 역시 읽기 방식에 맞춰 스크롤 모드에서는 줄 이동, 책 넘김 모드에서는 페이지 이동으로 자동 전환됩니다.',
             '',
-            '2. 가상 스크롤(Virtual Scrolling) 렌더링 엔진',
+            '2. 현재 줄 북마크 & 자동 위치 저장',
+            '   줄 번호와 북마크 표시를 꺼둔 상태에서도 [현재 줄 북마크] 버튼으로 지금 읽고 있는 최상단 줄에 바로 북마크를 추가하거나 해제할 수 있습니다.',
+            '   파일을 닫았다가 다시 열면 마지막 읽은 위치로 돌아갈 수 있는 복원 배너가 표시됩니다.',
+            '',
+            '3. 가상 스크롤(Virtual Scrolling) & 끝부분 잘림 방지',
             '   화면에 보이는 영역과 위아래 버퍼(±18줄)만 DOM으로 생성하여 수십 MB 이상의 대용량 소설, 로그, CSV 파일도 끊김 없이 쾌적하게 탐색합니다.',
-            '   표시 영역을 한 줄 높이의 정수 배로 정렬해 화면 끝부분에 다음 줄 윗부분이 잘려 보이는 현상을 방지합니다.',
+            '   표시 영역 높이를 한 줄 높이의 정수 배로 스냅하여 화면 끝부분에 글자 윗부분이 잘려 보이는 현상을 방지합니다.',
             '',
-            '3. 한글 글꼴 3종 지원 (고딕 / 바탕 / 고정폭)',
+            '4. 한글 글꼴 3종 지원 (고딕 / 바탕 / 고정폭)',
             '   보기 설정에서 고딕(산세리프), 바탕(Noto Serif KR 명조), 고정폭(D2Coding)을 전환하면 iPhone·iPad Safari에서도 한글 서체가 즉시 바뀝니다.',
             '   영문/숫자 정렬 테스트: ABCDEFG 1234567 | 가나다라마바사 1234567',
             '',
-            '4. 상하 여백 · 좌우 여백 · 표시 옵션 조절',
-            '   기본값으로 다크 테마, 바탕 글꼴, 23px 크기, 24px 좌우 여백이 적용되어 장편 소설 독서에 최적화되어 있습니다.',
-            '',
-            '5. 북마크 · 본문 검색 · 자동 위치 저장',
-            '   왼쪽 줄 번호 영역을 탭하거나 클릭하면 해당 줄에 북마크가 추가되며 메모도 남길 수 있습니다.',
-            '   파일을 닫았다가 다시 열면 마지막 읽은 위치로 돌아갈 수 있는 복원 배너가 표시됩니다.',
-            '',
-            '6. 전체화면(몰입 읽기) 모드',
+            '5. 전체화면(몰입 읽기) 모드',
             '   상단 우측 전체화면 아이콘을 누르면 모든 UI 바가 숨겨지고 본문만 표시됩니다.',
+            '   책 넘김 모드에서 전체화면을 켜면 하단에 현재 페이지와 진행률만 간결하게 표시되며, 전체화면을 끄면 원래 화면 크기에 맞춰 원래 페이지 번호로 정확히 복귀합니다.',
             '',
             '--- 긴 문단 페이지 분할 테스트 ---',
-            '어느 맑은 가을 오후, 서재 창가로 스며든 햇빛이 책상 위 원고지를 따뜻하게 비추고 있었다. 바람이 불 때마다 창밖의 은행나무 잎사귀들이 사각거리며 작은 파도처럼 일렁였고, 그 소리는 고요한 방 안의 시간을 천천히 흘려보냈다. 책장을 한 장씩 넘기는 감각은 단순한 정보의 이동을 넘어 문장과 문장 사이에 머무르는 호흡을 만들어 준다. 긴 문장이 화면 끝을 넘어 다음 페이지로 자연스럽게 이어질 때도 한 글자도 잘리지 않고 깔끔하게 정렬된다면, 독자는 기술의 존재를 잊은 채 오직 이야기에만 몰입할 수 있다.',
+            '어느 맑은 가을 오후, 서재 창가로 스며든 햇빛이 책상 위 원고지를 따뜻하게 비추고 있었다. 바람이 불 때마다 창밖의 은행나무 잎사귀들이 사각거리며 작은 파도처럼 일렁였고, 그 소리는 고요한 방 안의 시간을 천천히 흘려보냈다. 책장을 한 장씩 넘기는 감각은 단순한 정보의 이동을 넘어 문장과 문장 사이에 머무르는 호흡을 만들어 준다. 긴 문장이 화면 끝을 넘어 다음 페이지로 자연스럽게 이어질 때도 한 글자도 잘리지 않고 깔끔하게 정렬된다면, 독자는 기술의 존재를 잊은 채 오직 이야기에만 몰입할 수 있다. 좌우 스와이프나 화면 양쪽 탭, 키보드 방향키로 편안하게 다음 페이지를 넘겨 보세요.',
             '',
             '--- 가이드 문서 끝 ---'
         ].join('\n');
@@ -3339,7 +3381,7 @@
     }
 
     /* ========================================================================
-       가상 스크롤 및 추정 페이지 메트릭 계산
+       가상 스크롤 및 추정 페이지 메트릭 계산 (한글/CJK 전각 가중치)
        ======================================================================== */
     function measureLineVisualEm(idx, isMono) {
         const start = state.lineStarts[idx];
@@ -3444,6 +3486,18 @@
         if (!state.wordWrap || !state.prefixHeights) {
             return Math.min(state.totalLines - 1, Math.max(0, Math.floor(contentY / state.baseRowHeight)));
         }
+        return findLineIndexAtPrefixY(contentY);
+    }
+
+    /**
+     * prefixHeights 배열에서 누적 높이 y가 속한 0-based 줄 번호를 이진 탐색 (페이지 이동 공용)
+     */
+    function findLineIndexAtPrefixY(targetY) {
+        if (state.totalLines === 0) return 0;
+        const contentY = Math.max(0, targetY);
+        if (!state.prefixHeights) {
+            return Math.min(state.totalLines - 1, Math.max(0, Math.floor(contentY / state.baseRowHeight)));
+        }
         let low = 0;
         let high = state.totalLines - 1;
         while (low <= high) {
@@ -3525,7 +3579,9 @@
             ? 100
             : Math.min(100, Math.max(0, (logicalTop / maxLogicalScroll) * 100));
 
-        els.statCurrentLine.textContent = currentLineNum.toLocaleString();
+        syncStatusModeLabels();
+        els.statCurrentVal.textContent = currentLineNum.toLocaleString();
+        els.statTotalVal.textContent = state.totalLines.toLocaleString();
         els.progressFill.style.width = `${pct.toFixed(1)}%`;
         els.statProgress.textContent = `${pct.toFixed(1)}%`;
 
@@ -3534,6 +3590,8 @@
         } else {
             els.scrollTopBtn.classList.add('hidden');
         }
+
+        syncCurrentLineBookmarkUI();
     }
 
     /* ========================================================================
@@ -3541,8 +3599,10 @@
        ======================================================================== */
     function getPageAvailableHeight() {
         const stageH = els.pageStage.clientHeight || 400;
-        const innerH = Math.max(state.baseRowHeight, stageH - (state.paddingV * 2));
-        // 한 줄 높이의 정수 배로 정확히 맞춰 상·하단 글자 끝부분 잘림 방지
+        // 전체화면의 env(safe-area-inset-top) 등 실제 계산된 패딩 반영
+        const padSum = getVerticalPaddingSum(els.pageContent, state.paddingV);
+        const innerH = Math.max(state.baseRowHeight, stageH - padSum);
+        // 한 줄 높이의 정수 배로 정확히 맞춰 상·하단 글자 잘림 방지
         return Math.max(state.baseRowHeight, Math.floor(innerH / state.baseRowHeight) * state.baseRowHeight);
     }
 
@@ -3674,7 +3734,7 @@
     }
 
     /**
-     * 히스토리 스택이 비었을 때(점프 직후 등) 이전 페이지 시작 위치를 정확히 역산
+     * 히스토리 스택이 비었을 때(점프 직후, 전체화면 전환 직후 등) 이전 페이지 시작 위치를 역산
      */
     function computePrevPageStart(targetLine, targetOffset) {
         if (targetLine <= 0 && targetOffset <= 0) {
@@ -3758,15 +3818,21 @@
             ? 100
             : (!state.page.hasPrev ? 0 : Math.min(99.9, Math.max(0, (curY / Math.max(1, totalContentH)) * 100)));
 
-        els.pageIndicatorText.textContent = `${estPage.toLocaleString()} / ${estTotalPages.toLocaleString()} 페이지`;
-        els.pageBarPrevBtn.disabled = !state.page.hasPrev;
-        els.pageBarNextBtn.disabled = !state.page.hasNext;
+        // 전체화면 전용 미니멀 하단 표시 갱신
+        els.pageIndicatorText.textContent = `${estPage.toLocaleString()} / ${estTotalPages.toLocaleString()} 페이지 · ${pct.toFixed(1)}%`;
+
+        // 데스크톱 좌우 플로팅 버튼 상태 갱신
         els.pagePrevEdgeBtn.disabled = !state.page.hasPrev;
         els.pageNextEdgeBtn.disabled = !state.page.hasNext;
 
-        els.statCurrentLine.textContent = (state.page.startLine + 1).toLocaleString();
+        // 일반 모드 하단 상태바 통합 표시 갱신
+        syncStatusModeLabels();
+        els.statCurrentVal.textContent = estPage.toLocaleString();
+        els.statTotalVal.textContent = estTotalPages.toLocaleString();
         els.progressFill.style.width = `${pct.toFixed(1)}%`;
         els.statProgress.textContent = `${pct.toFixed(1)}%`;
+
+        syncCurrentLineBookmarkUI();
     }
 
     function triggerPageAnimation(animDir) {
@@ -3851,6 +3917,33 @@
     }
 
     /**
+     * 책 넘김 모드에서 특정 페이지로 즉시 이동 (prefixHeights 이진 탐색 활용)
+     */
+    function jumpToPage(pageNum) {
+        if (state.totalLines === 0 || state.viewMode !== 'page') return;
+        const totalPages = Math.max(1, state.page.estimatedTotalPages);
+        const clampedPage = Math.min(totalPages, Math.max(1, pageNum));
+
+        state.page.history = [];
+        if (clampedPage === 1) {
+            state.page.startLine = 0;
+            state.page.startOffset = 0;
+        } else if (clampedPage >= totalPages) {
+            const lastStart = computePrevPageStart(state.totalLines, 0);
+            state.page.startLine = lastStart.line;
+            state.page.startOffset = lastStart.offset;
+        } else {
+            const availH = getPageAvailableHeight();
+            const targetY = (clampedPage - 1) * availH;
+            state.page.startLine = findLineIndexAtPrefixY(targetY);
+            state.page.startOffset = 0;
+        }
+
+        renderPageMode(null);
+        scheduleSavePosition();
+    }
+
+    /**
      * 읽기 방식 전환 (스크롤 <-> 책 넘김) - 현재 읽는 줄 그대로 유지
      */
     function switchViewMode(newMode) {
@@ -3920,7 +4013,7 @@
     }
 
     /* ========================================================================
-       대용량 비동기 블록 고속 검색 엔진 (저메모리 + 메인 스레드 논블로킹)
+       대용량 비동기 블록 고속 검색 엔진 (512KB 청크, 메인 스레드 논블로킹)
        ======================================================================== */
     async function executeSearch(jumpToFirst = true) {
         const token = ++state.searchToken;
@@ -4030,13 +4123,27 @@
     }
 
     /* ========================================================================
-       특정 줄 번호 이동 (Ctrl+G) 모달
+       특정 줄 / 특정 페이지 이동 (Ctrl+G) 모달
        ======================================================================== */
     function openGotoModal() {
         if (state.totalLines === 0) return;
-        els.gotoModalSub.textContent = `1부터 ${state.totalLines.toLocaleString()} 사이의 줄 번호를 입력하세요.`;
-        els.gotoModalInput.max = state.totalLines;
-        els.gotoModalInput.value = getCurrentTopLineIndex() + 1;
+        const isPage = state.viewMode === 'page';
+
+        if (isPage) {
+            const totalPages = Math.max(1, state.page.estimatedTotalPages);
+            els.gotoModalTitle.textContent = '특정 페이지로 이동 (Ctrl+G)';
+            els.gotoModalSub.textContent = `1부터 ${totalPages.toLocaleString()} 사이의 페이지 번호를 입력하세요.`;
+            els.gotoModalInput.max = totalPages;
+            els.gotoModalInput.placeholder = `예: ${Math.max(1, Math.round(totalPages / 2))}`;
+            els.gotoModalInput.value = state.page.estimatedPage;
+        } else {
+            els.gotoModalTitle.textContent = '특정 줄로 이동 (Ctrl+G)';
+            els.gotoModalSub.textContent = `1부터 ${state.totalLines.toLocaleString()} 사이의 줄 번호를 입력하세요.`;
+            els.gotoModalInput.max = state.totalLines;
+            els.gotoModalInput.placeholder = '예: 12500';
+            els.gotoModalInput.value = getCurrentTopLineIndex() + 1;
+        }
+
         els.gotoModal.classList.remove('hidden');
         setTimeout(() => {
             els.gotoModalInput.focus();
@@ -4050,13 +4157,24 @@
 
     function submitGotoModal() {
         const val = parseInt(els.gotoModalInput.value, 10);
-        if (isNaN(val) || val < 1 || val > state.totalLines) {
-            showToast(`1 ~ ${state.totalLines.toLocaleString()} 사이의 숫자를 입력하세요.`);
-            return;
+        if (state.viewMode === 'page') {
+            const totalPages = Math.max(1, state.page.estimatedTotalPages);
+            if (isNaN(val) || val < 1 || val > totalPages) {
+                showToast(`1 ~ ${totalPages.toLocaleString()} 사이의 페이지 번호를 입력하세요.`);
+                return;
+            }
+            closeGotoModal();
+            jumpToPage(val);
+            showToast(`${val.toLocaleString()}페이지로 이동했습니다.`);
+        } else {
+            if (isNaN(val) || val < 1 || val > state.totalLines) {
+                showToast(`1 ~ ${state.totalLines.toLocaleString()} 사이의 숫자를 입력하세요.`);
+                return;
+            }
+            closeGotoModal();
+            jumpToLine(val, false);
+            showToast(`${val.toLocaleString()}번째 줄로 이동했습니다.`);
         }
-        closeGotoModal();
-        jumpToLine(val, false);
-        showToast(`${val.toLocaleString()}번째 줄로 이동했습니다.`);
     }
 
     /* ========================================================================
@@ -4100,7 +4218,7 @@
         handleGutterClick(e);
     });
 
-    // 책 넘김 모드: 거터 클릭(북마크) 및 좌우 가장자리 탭 페이지 이동
+    // 책 넘김 모드: 거터 클릭(북마크) 및 좌우 가장자리(28% / 72%) 탭 페이지 이동
     let lastTouchHandledAt = 0;
     els.pageStage.addEventListener('click', (e) => {
         if (handleGutterClick(e)) return;
@@ -4119,7 +4237,7 @@
         }
     });
 
-    // 책 넘김 모드: 모바일/태블릿 좌우 스와이프 제스처 (+ 애니메이션 설정 연동)
+    // 책 넘김 모드: 모바일/태블릿 좌우 스와이프 제스처 (+ 넘김 효과 연동)
     let touchStartX = 0;
     let touchStartY = 0;
     let touchStartTime = 0;
@@ -4190,15 +4308,13 @@
         els.pageContent.style.transform = '';
     }, { passive: true });
 
-    // 페이지 이동 버튼 바인딩
+    // 데스크톱 플로팅 페이지 넘김 버튼 바인딩
     els.pagePrevEdgeBtn.addEventListener('click', goToPrevPage);
     els.pageNextEdgeBtn.addEventListener('click', goToNextPage);
-    els.pageBarPrevBtn.addEventListener('click', goToPrevPage);
-    els.pageBarNextBtn.addEventListener('click', goToNextPage);
 
-    // 2. 윈도우 리사이즈 및 ResizeObserver 기반 뷰포트 크기 변화 대응
+    // 2. 윈도우 리사이즈 및 ResizeObserver(dropZone + pageStage 직접 감시)
     let resizeTimer = null;
-    function scheduleViewportReflow(sizeChanged) {
+    function scheduleViewportReflow(needsMetricRecalc) {
         if (state.totalLines === 0) return;
         if (state.viewMode === 'page') {
             clearTimeout(resizeTimer);
@@ -4206,8 +4322,8 @@
                 recalculateMetrics();
                 state.page.history = [];
                 renderPageMode(null);
-            }, 100);
-        } else if (sizeChanged && state.wordWrap) {
+            }, 90);
+        } else if (needsMetricRecalc && state.wordWrap) {
             clearTimeout(resizeTimer);
             resizeTimer = setTimeout(() => {
                 syncScrollViewportHeight();
@@ -4215,7 +4331,7 @@
                 state.lastRenderedStart = -1;
                 renderVisibleRows();
                 updateScrollStatus();
-            }, 120);
+            }, 110);
         } else {
             syncScrollViewportHeight();
             state.lastRenderedStart = -1;
@@ -4231,22 +4347,42 @@
     });
 
     if (typeof ResizeObserver !== 'undefined') {
-        let lastVpW = 0;
-        let lastVpH = 0;
+        let lastDropW = 0;
+        let lastDropH = 0;
+        let lastStageW = 0;
+        let lastStageH = 0;
         const vpObserver = new ResizeObserver((entries) => {
-            const rect = entries[0].contentRect;
-            const w = Math.round(rect.width);
-            const h = Math.round(rect.height);
-            if (w === 0 || h === 0) return;
-            const widthChanged = w !== lastVpW;
-            const heightChanged = h !== lastVpH;
-            lastVpW = w;
-            lastVpH = h;
-            if (widthChanged || heightChanged) {
-                scheduleViewportReflow(widthChanged || heightChanged);
+            let changed = false;
+            let widthChanged = false;
+
+            for (const entry of entries) {
+                const w = Math.round(entry.contentRect.width);
+                const h = Math.round(entry.contentRect.height);
+                if (w === 0 || h === 0) continue;
+
+                if (entry.target === els.pageStage) {
+                    if (w !== lastStageW || h !== lastStageH) {
+                        if (w !== lastStageW) widthChanged = true;
+                        lastStageW = w;
+                        lastStageH = h;
+                        changed = true;
+                    }
+                } else if (entry.target === els.dropZone) {
+                    if (w !== lastDropW || h !== lastDropH) {
+                        if (w !== lastDropW) widthChanged = true;
+                        lastDropW = w;
+                        lastDropH = h;
+                        changed = true;
+                    }
+                }
+            }
+
+            if (changed) {
+                scheduleViewportReflow(widthChanged || state.viewMode === 'page');
             }
         });
         vpObserver.observe(els.dropZone);
+        vpObserver.observe(els.pageStage);
     }
 
     // 3. 파일 열기 & 가이드 문서
@@ -4260,6 +4396,11 @@
     });
 
     els.emptySmallSampleBtn.addEventListener('click', generateMiniSample);
+
+    // 현재 줄 북마크 버튼 (데스크톱 & 모바일)
+    els.currentBookmarkBtns.forEach(btn => {
+        btn.addEventListener('click', toggleCurrentTopLineBookmark);
+    });
 
     // 전체화면 진입 & 종료 버튼
     els.fullscreenBtn.addEventListener('click', enterFullscreen);
@@ -4393,6 +4534,7 @@
             state.activeBookmarkLine = null;
             saveFileMetadata();
             renderBookmarkDrawer();
+            syncCurrentLineBookmarkUI();
             renderActiveView(null);
             showToast('모든 북마크가 삭제되었습니다.');
         }
@@ -4415,7 +4557,7 @@
         scheduleViewportReflow(true);
     });
 
-    // 9. 줄 이동 (Ctrl+G) 모달
+    // 9. 줄/페이지 이동 (Ctrl+G) 모달
     els.openGotoModalBtn.addEventListener('click', openGotoModal);
     els.gotoModalCancelBtn.addEventListener('click', closeGotoModal);
     els.gotoModalConfirmBtn.addEventListener('click', submitGotoModal);
@@ -4432,52 +4574,7 @@
         }
     });
 
-    // 10. 전체 복사 (Clipboard API 우선 + iOS 호환 fallback + 대용량 보호)
-    async function handleCopyAllText() {
-        if (!state.rawText) {
-            showToast('복사할 텍스트가 없습니다.');
-            return;
-        }
-        if (state.fileSize > MAX_COPY_BYTES) {
-            showToast('10MB 초과 대용량 파일은 브라우저 멈춤 방지를 위해 전체 복사가 제한됩니다.');
-            return;
-        }
-
-        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-            try {
-                await navigator.clipboard.writeText(state.rawText);
-                showToast('전체 텍스트가 클립보드에 복사되었습니다.');
-                return;
-            } catch (err) {
-                // 비보안 컨텍스트 등에서는 아래 fallback으로 진행
-            }
-        }
-
-        const ta = document.createElement('textarea');
-        ta.value = state.rawText;
-        ta.setAttribute('readonly', '');
-        ta.style.position = 'fixed';
-        ta.style.top = '-9999px';
-        ta.style.left = '-9999px';
-        ta.style.opacity = '0';
-        document.body.appendChild(ta);
-
-        try {
-            ta.focus({ preventScroll: true });
-            ta.setSelectionRange(0, ta.value.length);
-            const ok = document.execCommand('copy');
-            showToast(ok ? '전체 텍스트가 클립보드에 복사되었습니다.' : '복사에 실패했습니다.');
-        } catch (err) {
-            showToast('복사 중 오류가 발생했습니다.');
-        } finally {
-            ta.blur();
-            document.body.removeChild(ta);
-        }
-    }
-    els.copyAllBtn.addEventListener('click', handleCopyAllText);
-    els.mobileCopyAllBtn.addEventListener('click', handleCopyAllText);
-
-    // 11. 보기 설정 토글 & 읽기 방식 / 넘김 효과 / 테마 / 글꼴 / 크기 / 줄간격 / 여백 / 표시 옵션
+    // 10. 보기 설정 토글 & 읽기 방식 / 넘김 효과 / 테마 / 글꼴 / 크기 / 줄간격 / 여백 / 표시 옵션
     els.toggleSettingsBtn.addEventListener('click', () => {
         els.settingsBar.classList.toggle('hidden');
         if (state.totalLines > 0) {
@@ -4631,7 +4728,7 @@
         }
     });
 
-    // 12. 맨 위로 이동 & 전역 단축키 (Ctrl+F, Ctrl+G, F2, Shift+F2, Esc, 페이지 넘김 키)
+    // 11. 맨 위로 이동 & 전역 단축키 (Ctrl+F, Ctrl+G, F2, Shift+F2, Esc, 페이지 넘김 키)
     els.scrollTopBtn.addEventListener('click', () => {
         els.vsViewport.scrollTo({ top: 0, behavior: 'smooth' });
     });
@@ -4675,9 +4772,10 @@
         }
     });
 
-    // 초기 실행: 저장된 보기 설정 복원 및 북마크 패널 빈 상태 렌더링
+    // 초기 실행: 저장된 보기 설정 복원, 북마크 패널 및 현재 줄 북마크 버튼 상태 초기화
     loadUserPreferences();
     renderBookmarkDrawer();
+    syncCurrentLineBookmarkUI();
 })();
 </script>
 </body>
