@@ -1,0 +1,3423 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" id="appleStatusBarMeta" content="default">
+    <meta name="theme-color" id="themeColorMeta" content="#f8fafc">
+    <title>고성능 대용량 텍스트 뷰어 (Safari & 모바일 최적화)</title>
+    <!-- 페이지 최초 로드 시 저장된 테마를 즉시 반영해 흰 화면 깜빡임(FOUC) 방지 -->
+    <script>
+        (function () {
+            try {
+                var raw = localStorage.getItem('tv_v2_prefs');
+                if (!raw) return;
+                var prefs = JSON.parse(raw);
+                var theme = prefs && prefs.theme;
+                var metaMap = {
+                    light: { color: '#f8fafc', statusBar: 'default' },
+                    sepia: { color: '#f4ecd8', statusBar: 'default' },
+                    dark:  { color: '#0b1120', statusBar: 'black-translucent' }
+                };
+                if (theme && metaMap[theme]) {
+                    document.documentElement.setAttribute('data-theme', theme);
+                    var tc = document.getElementById('themeColorMeta');
+                    var sb = document.getElementById('appleStatusBarMeta');
+                    if (tc) tc.setAttribute('content', metaMap[theme].color);
+                    if (sb) sb.setAttribute('content', metaMap[theme].statusBar);
+                }
+            } catch (e) {}
+        })();
+    </script>
+    <style>
+        /* =========================================================
+           1. 테마별 CSS 변수 정의 (html 루트 적용으로 Safari 여백 통일)
+           ========================================================= */
+        :root,
+        html[data-theme="light"] {
+            color-scheme: light;
+            --bg-app: #f8fafc;
+            --bg-surface: #ffffff;
+            --bg-subtle: #f1f5f9;
+            --bg-hover: #e2e8f0;
+            --bg-active: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --text-active: #0f172a;
+            --border-color: #e2e8f0;
+            --accent: #2563eb;
+            --accent-hover: #1d4ed8;
+            --accent-soft: rgba(37, 99, 235, 0.11);
+            --bookmark-color: #d97706;
+            --bookmark-soft: rgba(217, 119, 6, 0.12);
+            --bookmark-border: rgba(217, 119, 6, 0.35);
+            --danger-color: #dc2626;
+            --danger-soft: rgba(220, 38, 38, 0.12);
+            --mark-bg: #fef08a;
+            --mark-text: #0f172a;
+            --mark-active-bg: #f97316;
+            --mark-active-text: #ffffff;
+            --row-hover: rgba(15, 23, 42, 0.035);
+            --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+            --shadow-md: 0 6px 20px rgba(15, 23, 42, 0.12);
+            --shadow-lg: 0 16px 36px rgba(15, 23, 42, 0.22);
+        }
+
+        html[data-theme="sepia"] {
+            color-scheme: light;
+            --bg-app: #f4ecd8;
+            --bg-surface: #fbf7ed;
+            --bg-subtle: #efe5ce;
+            --bg-hover: #e5d8ba;
+            --bg-active: #fbf7ed;
+            --text-primary: #3b2f23;
+            --text-secondary: #685643;
+            --text-muted: #9c8974;
+            --text-active: #2c2117;
+            --border-color: #dfd2b5;
+            --accent: #b45309;
+            --accent-hover: #92400e;
+            --accent-soft: rgba(180, 83, 9, 0.12);
+            --bookmark-color: #b91c1c;
+            --bookmark-soft: rgba(185, 28, 28, 0.11);
+            --bookmark-border: rgba(185, 28, 28, 0.32);
+            --danger-color: #b91c1c;
+            --danger-soft: rgba(185, 28, 28, 0.12);
+            --mark-bg: #fde047;
+            --mark-text: #2c2117;
+            --mark-active-bg: #c2410c;
+            --mark-active-text: #ffffff;
+            --row-hover: rgba(59, 47, 35, 0.045);
+            --shadow-sm: 0 1px 2px rgba(59, 47, 35, 0.08);
+            --shadow-md: 0 6px 20px rgba(59, 47, 35, 0.14);
+            --shadow-lg: 0 16px 36px rgba(59, 47, 35, 0.24);
+        }
+
+        html[data-theme="dark"] {
+            color-scheme: dark;
+            --bg-app: #0b1120;
+            --bg-surface: #111827;
+            --bg-subtle: #1e293b;
+            --bg-hover: #334155;
+            --bg-active: #0f172a;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --text-active: #ffffff;
+            --border-color: #1f2937;
+            --accent: #3b82f6;
+            --accent-hover: #60a5fa;
+            --accent-soft: rgba(59, 130, 246, 0.18);
+            --bookmark-color: #fbbf24;
+            --bookmark-soft: rgba(251, 191, 36, 0.15);
+            --bookmark-border: rgba(251, 191, 36, 0.38);
+            --danger-color: #f87171;
+            --danger-soft: rgba(248, 113, 113, 0.16);
+            --mark-bg: #854d0e;
+            --mark-text: #fef9c3;
+            --mark-active-bg: #ea580c;
+            --mark-active-text: #ffffff;
+            --row-hover: rgba(248, 250, 252, 0.04);
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+            --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+            --shadow-lg: 0 18px 42px rgba(0, 0, 0, 0.65);
+        }
+
+        /* =========================================================
+           2. 기본 리셋 및 레이아웃 구조 (Safari 100dvh & Safe Area 대응)
+           ========================================================= */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            background-color: var(--bg-app);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+            overscroll-behavior: none;
+            font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", "Noto Sans KR", sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -webkit-text-size-adjust: 100%;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .app-shell {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            height: 100dvh;
+            width: 100%;
+            overflow: hidden;
+            background-color: var(--bg-app);
+            color: var(--text-primary);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .show-mobile-only {
+            display: none !important;
+        }
+
+        /* =========================================================
+           3. 상단 툴바 & 보기 설정 바
+           ========================================================= */
+        .toolbar {
+            background-color: var(--bg-surface);
+            border-bottom: 1px solid var(--border-color);
+            padding-top: calc(8px + env(safe-area-inset-top));
+            padding-bottom: 8px;
+            padding-left: calc(14px + env(safe-area-inset-left));
+            padding-right: calc(14px + env(safe-area-inset-right));
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            z-index: 35;
+            box-shadow: var(--shadow-sm);
+            user-select: none;
+            -webkit-user-select: none;
+            flex-shrink: 0;
+        }
+
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-right: 2px;
+            font-weight: 700;
+            font-size: 15px;
+            letter-spacing: -0.02em;
+            color: var(--text-primary);
+        }
+
+        .brand-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            background: var(--accent);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .brand-badge {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 999px;
+            background-color: var(--accent-soft);
+            color: var(--accent);
+        }
+
+        /* 버튼 & 세그먼트 컨트롤 (터치 최적화) */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            min-height: 36px;
+            padding: 0 12px;
+            border-radius: 9px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-subtle);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            touch-action: manipulation;
+            transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+            white-space: nowrap;
+        }
+
+        .btn:hover:not(:disabled) {
+            background-color: var(--bg-hover);
+        }
+
+        .btn:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+
+        .btn:disabled {
+            opacity: 0.42;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background-color: var(--accent);
+            border-color: var(--accent);
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background-color: var(--accent-hover);
+            border-color: var(--accent-hover);
+        }
+
+        .btn-toggle.active {
+            background-color: var(--accent-soft);
+            border-color: var(--accent);
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .btn-bookmark.active {
+            background-color: var(--bookmark-soft);
+            border-color: var(--bookmark-color);
+            color: var(--bookmark-color);
+            font-weight: 600;
+        }
+
+        .btn-icon {
+            width: 36px;
+            min-width: 36px;
+            padding: 0;
+        }
+
+        .btn-sm {
+            min-height: 30px;
+            padding: 0 10px;
+            font-size: 12px;
+            border-radius: 7px;
+        }
+
+        .count-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 19px;
+            height: 19px;
+            padding: 0 5px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+            background-color: var(--bookmark-color);
+            color: #ffffff;
+        }
+
+        .segment-group {
+            display: inline-flex;
+            align-items: center;
+            background-color: var(--bg-subtle);
+            border: 1px solid var(--border-color);
+            border-radius: 9px;
+            padding: 2px;
+            min-height: 36px;
+        }
+
+        .segment-btn {
+            min-height: 30px;
+            padding: 0 10px;
+            border: none;
+            border-radius: 7px;
+            background: transparent;
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-size: 12.5px;
+            font-weight: 500;
+            cursor: pointer;
+            touch-action: manipulation;
+            transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .segment-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .segment-btn.active {
+            background-color: var(--bg-active);
+            color: var(--text-active);
+            font-weight: 600;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+        }
+
+        .theme-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            border: 1px solid rgba(128, 128, 128, 0.45);
+        }
+
+        /* 검색 박스 (iOS Safari 자동 확대 방지를 위해 input 16px 적용) */
+        .search-box {
+            display: flex;
+            align-items: center;
+            min-height: 36px;
+            background-color: var(--bg-subtle);
+            border: 1px solid var(--border-color);
+            border-radius: 9px;
+            padding: 0 4px 0 10px;
+            min-width: 210px;
+            max-width: 360px;
+            flex: 1;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .search-box:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--accent-soft);
+        }
+
+        .search-input {
+            border: none;
+            background: transparent;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 16px;
+            width: 100%;
+            min-width: 0;
+            outline: none;
+            padding-left: 6px;
+        }
+
+        .search-input::placeholder {
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .search-count {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 11px;
+            color: var(--text-muted);
+            padding: 0 4px;
+            white-space: nowrap;
+        }
+
+        .search-nav-btn {
+            width: 30px;
+            height: 30px;
+            border: none;
+            border-radius: 6px;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            touch-action: manipulation;
+            flex-shrink: 0;
+        }
+
+        .search-nav-btn:hover:not(:disabled) {
+            background-color: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .search-nav-btn.active {
+            background-color: var(--accent-soft);
+            color: var(--accent);
+        }
+
+        .search-nav-btn:disabled {
+            opacity: 0.32;
+            cursor: not-allowed;
+        }
+
+        /* 접이식 보기 설정 패널 */
+        .settings-bar {
+            background-color: var(--bg-surface);
+            border-bottom: 1px solid var(--border-color);
+            padding-top: 9px;
+            padding-bottom: 9px;
+            padding-left: calc(14px + env(safe-area-inset-left));
+            padding-right: calc(14px + env(safe-area-inset-right));
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px 14px;
+            z-index: 30;
+            user-select: none;
+            -webkit-user-select: none;
+            max-height: 48vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            flex-shrink: 0;
+        }
+
+        .setting-item {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 12.5px;
+        }
+
+        .setting-label {
+            color: var(--text-secondary);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        /* =========================================================
+           4. 마지막 읽은 위치 복원 배너
+           ========================================================= */
+        .resume-banner {
+            background-color: var(--accent-soft);
+            border-bottom: 1px solid var(--border-color);
+            padding-top: 8px;
+            padding-bottom: 8px;
+            padding-left: calc(14px + env(safe-area-inset-left));
+            padding-right: calc(14px + env(safe-area-inset-right));
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            font-size: 12.5px;
+            z-index: 28;
+            flex-shrink: 0;
+            animation: slideDown 0.2s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .resume-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .resume-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* =========================================================
+           5. 메인 작업 공간 (가상 스크롤 뷰포트 + 북마크 패널)
+           ========================================================= */
+        .workspace {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .main-area {
+            flex: 1;
+            min-width: 0;
+            min-height: 0;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 드래그 앤 드롭 오버레이 */
+        .drag-overlay {
+            position: absolute;
+            inset: 12px;
+            z-index: 50;
+            border-radius: 16px;
+            border: 2px dashed var(--accent);
+            background-color: var(--accent-soft);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        .drag-card {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            padding: 24px 32px;
+            border-radius: 16px;
+            box-shadow: var(--shadow-md);
+            text-align: center;
+        }
+
+        /* 로딩 스피너 오버레이 */
+        .loading-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 45;
+            background-color: rgba(15, 23, 42, 0.38);
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .loading-card {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            padding: 20px 26px;
+            border-radius: 14px;
+            box-shadow: var(--shadow-md);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            font-size: 13.5px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .spinner {
+            width: 22px;
+            height: 22px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.75s linear infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 초기 빈 화면 */
+        .empty-state {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .empty-card {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            padding: 32px 24px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .empty-icon-wrap {
+            width: 56px;
+            height: 56px;
+            margin: 0 auto 16px;
+            border-radius: 16px;
+            background-color: var(--accent-soft);
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .empty-title {
+            font-size: 19px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: var(--text-primary);
+        }
+
+        .empty-desc {
+            font-size: 13.5px;
+            color: var(--text-secondary);
+            line-height: 1.65;
+            margin-bottom: 22px;
+        }
+
+        .empty-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .empty-actions .btn {
+            min-height: 40px;
+            padding: 0 16px;
+            font-size: 13.5px;
+        }
+
+        /* =========================================================
+           가상 스크롤 뷰포트 (iOS Safari 관성 스크롤 & 안전 영역 대응)
+           ========================================================= */
+        .vs-viewport {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            position: relative;
+            background-color: var(--bg-surface);
+            --vs-row-h: 26px;
+        }
+
+        .vs-spacer {
+            position: relative;
+            width: 100%;
+            min-width: 100%;
+        }
+
+        .vs-content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            will-change: transform;
+        }
+
+        .mode-nowrap .vs-content {
+            right: auto;
+            min-width: 100%;
+        }
+
+        /* 개별 텍스트 행 (stretch로 자동 줄바꿈 시 거터 세로선 유지) */
+        .vs-row {
+            display: flex;
+            align-items: stretch;
+            width: 100%;
+            padding-top: 0;
+            padding-bottom: 0;
+            padding-left: calc(6px + env(safe-area-inset-left));
+            padding-right: calc(18px + env(safe-area-inset-right));
+            border-left: 3px solid transparent;
+            transition: background-color 0.12s ease;
+        }
+
+        .vs-row:hover {
+            background-color: var(--row-hover);
+        }
+
+        .vs-row.is-bookmarked {
+            background-color: var(--bookmark-soft);
+            border-left-color: var(--bookmark-color);
+        }
+
+        .vs-row.is-pulse {
+            animation: rowPulse 1.2s ease-out;
+        }
+
+        @keyframes rowPulse {
+            0% { background-color: var(--accent-soft); }
+            100% { background-color: transparent; }
+        }
+
+        /* 거터 (북마크 버튼 + 줄 번호) */
+        .vs-gutter {
+            flex-shrink: 0;
+            display: inline-flex;
+            align-items: flex-start;
+            justify-content: flex-end;
+            gap: 6px;
+            min-width: 46px;
+            padding-left: 4px;
+            padding-right: 11px;
+            margin-right: 12px;
+            border-right: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.82em;
+            user-select: none;
+            -webkit-user-select: none;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+
+        .vs-gutter:hover {
+            color: var(--bookmark-color);
+        }
+
+        .vs-row.is-bookmarked .vs-gutter {
+            color: var(--bookmark-color);
+            font-weight: 700;
+        }
+
+        .bm-ribbon-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 14px;
+            height: var(--vs-row-h, 26px);
+            opacity: 0.28;
+            transition: opacity 0.15s, transform 0.15s;
+        }
+
+        .vs-gutter:hover .bm-ribbon-icon,
+        .vs-row.is-bookmarked .bm-ribbon-icon {
+            opacity: 1;
+            color: var(--bookmark-color);
+        }
+
+        .vs-line-num-text {
+            text-align: right;
+            line-height: var(--vs-row-h, 26px);
+        }
+
+        .vs-line-text {
+            flex: 1;
+            min-width: 0;
+            tab-size: 4;
+            color: var(--text-primary);
+        }
+
+        /* 줄바꿈 모드 제어 */
+        .mode-nowrap .vs-row {
+            white-space: pre;
+            width: max-content;
+            min-width: 100%;
+        }
+
+        .mode-nowrap .vs-line-text {
+            white-space: pre;
+            overflow: visible;
+        }
+
+        .mode-wrap .vs-row {
+            white-space: pre-wrap;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }
+
+        .mode-wrap .vs-line-text {
+            white-space: pre-wrap;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }
+
+        /* 글꼴 패밀리 클래스 */
+        .font-sans {
+            font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", "Noto Sans KR", sans-serif;
+        }
+
+        .font-serif {
+            font-family: "AppleMyungjo", "Batang", "바탕", "Noto Serif KR", Georgia, serif;
+        }
+
+        .font-mono {
+            font-family: "D2Coding", "Nanum Gothic Coding", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+
+        /* 검색어 하이라이트 */
+        mark.hl {
+            background-color: var(--mark-bg);
+            color: var(--mark-text);
+            border-radius: 2px;
+            padding: 0 1px;
+        }
+
+        mark.hl.active {
+            background-color: var(--mark-active-bg);
+            color: var(--mark-active-text);
+            font-weight: 700;
+            box-shadow: 0 0 0 1px var(--mark-active-bg);
+        }
+
+        /* 플로팅 맨 위로 버튼 */
+        .fab-top {
+            position: absolute;
+            right: calc(18px + env(safe-area-inset-right));
+            bottom: calc(16px + env(safe-area-inset-bottom));
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            box-shadow: var(--shadow-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            touch-action: manipulation;
+            z-index: 25;
+            transition: transform 0.15s, background-color 0.15s;
+        }
+
+        .fab-top:hover {
+            background-color: var(--bg-hover);
+            color: var(--text-primary);
+            transform: translateY(-2px);
+        }
+
+        /* =========================================================
+           6. 북마크 사이드 드로어 / 모바일 바텀 시트 패널
+           ========================================================= */
+        .drawer-backdrop {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(15, 23, 42, 0.45);
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+            z-index: 48;
+            animation: fadeIn 0.18s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .bookmark-drawer {
+            width: 340px;
+            max-width: 90vw;
+            background-color: var(--bg-surface);
+            border-left: 1px solid var(--border-color);
+            padding-right: env(safe-area-inset-right);
+            display: flex;
+            flex-direction: column;
+            z-index: 50;
+            box-shadow: var(--shadow-md);
+            flex-shrink: 0;
+        }
+
+        .sheet-handle-bar {
+            display: none;
+            padding: 8px 0 2px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .sheet-handle-pill {
+            width: 38px;
+            height: 4px;
+            border-radius: 999px;
+            background-color: var(--border-color);
+        }
+
+        .drawer-header {
+            padding: 11px 14px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .drawer-title {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .drawer-toolbar {
+            padding: 8px 12px;
+            background-color: var(--bg-subtle);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+        }
+
+        .btn-danger-ghost {
+            color: var(--danger-color);
+            background: transparent;
+            border-color: transparent;
+            font-size: 11.5px;
+            padding: 0 8px;
+            min-height: 28px;
+        }
+
+        .btn-danger-ghost:hover:not(:disabled) {
+            background-color: var(--danger-soft);
+            border-color: var(--danger-color);
+        }
+
+        .btn-danger-confirm {
+            background-color: var(--danger-color);
+            border-color: var(--danger-color);
+            color: #ffffff;
+            font-size: 11.5px;
+            padding: 0 9px;
+            min-height: 28px;
+        }
+
+        .drawer-list {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            padding: 10px;
+            padding-bottom: calc(14px + env(safe-area-inset-bottom));
+            display: flex;
+            flex-direction: column;
+            gap: 9px;
+        }
+
+        .drawer-empty {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 28px 20px;
+            color: var(--text-secondary);
+            font-size: 12.5px;
+            line-height: 1.6;
+        }
+
+        .bm-card {
+            background-color: var(--bg-subtle);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 10px 11px;
+            transition: border-color 0.15s, background-color 0.15s;
+            cursor: pointer;
+        }
+
+        .bm-card:hover {
+            border-color: var(--bookmark-color);
+            background-color: var(--bg-surface);
+        }
+
+        .bm-card-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+
+        .bm-line-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 11.5px;
+            font-weight: 700;
+            color: var(--bookmark-color);
+            background-color: var(--bookmark-soft);
+            border: 1px solid var(--bookmark-border);
+            padding: 2px 7px;
+            border-radius: 6px;
+        }
+
+        .bm-percent {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+
+        .bm-delete-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 7px;
+            background: transparent;
+            color: var(--text-muted);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+
+        .bm-delete-btn:hover {
+            background-color: var(--danger-soft);
+            color: var(--danger-color);
+        }
+
+        .bm-snippet {
+            font-size: 12px;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 7px;
+            padding: 4px 7px;
+            border-radius: 6px;
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+        }
+
+        .bm-memo-input {
+            width: 100%;
+            min-height: 34px;
+            padding: 4px 9px;
+            border-radius: 7px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-surface);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        .bm-memo-input:focus {
+            border-color: var(--accent);
+        }
+
+        .bm-memo-input::placeholder {
+            color: var(--text-muted);
+            font-size: 12.5px;
+        }
+
+        /* =========================================================
+           7. 하단 상태바 & 줄 이동(Go to Line) 모달
+           ========================================================= */
+        .statusbar {
+            background-color: var(--bg-surface);
+            border-top: 1px solid var(--border-color);
+            padding-top: 6px;
+            padding-bottom: calc(6px + env(safe-area-inset-bottom));
+            padding-left: calc(14px + env(safe-area-inset-left));
+            padding-right: calc(14px + env(safe-area-inset-right));
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            font-size: 11.5px;
+            color: var(--text-secondary);
+            z-index: 35;
+            user-select: none;
+            -webkit-user-select: none;
+            flex-shrink: 0;
+        }
+
+        .status-left, .status-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .status-filename {
+            font-weight: 600;
+            color: var(--text-primary);
+            max-width: 220px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .status-divider {
+            width: 1px;
+            height: 12px;
+            background-color: var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .status-clickable {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            min-height: 30px;
+            padding: 2px 9px;
+            border-radius: 7px;
+            background-color: var(--bg-subtle);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 12px;
+            cursor: pointer;
+            touch-action: manipulation;
+            transition: background-color 0.15s;
+        }
+
+        .status-clickable:hover:not(:disabled) {
+            background-color: var(--bg-hover);
+        }
+
+        .status-clickable:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .progress-wrap {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .progress-track {
+            width: 64px;
+            height: 6px;
+            border-radius: 999px;
+            background-color: var(--bg-subtle);
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background-color: var(--accent);
+            transition: width 0.1s ease-out;
+        }
+
+        .progress-text {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-weight: 700;
+            color: var(--accent);
+            min-width: 42px;
+            text-align: right;
+        }
+
+        /* 줄 이동(Ctrl+G) 모달 */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(15, 23, 42, 0.48);
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 65;
+            padding: 16px;
+        }
+
+        .modal-card {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 20px;
+            width: 100%;
+            max-width: 340px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .modal-title {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: var(--text-primary);
+        }
+
+        .modal-sub {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 14px;
+        }
+
+        .modal-input {
+            width: 100%;
+            height: 42px;
+            padding: 0 12px;
+            border-radius: 9px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-subtle);
+            color: var(--text-primary);
+            font-size: 16px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            outline: none;
+            margin-bottom: 14px;
+        }
+
+        .modal-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--accent-soft);
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        /* 토스트 알림 (하단 Safe Area 반영) */
+        .toast {
+            position: fixed;
+            bottom: calc(56px + env(safe-area-inset-bottom));
+            left: 50%;
+            transform: translateX(-50%) translateY(8px);
+            background-color: #0f172a;
+            color: #f8fafc;
+            padding: 9px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 500;
+            box-shadow: var(--shadow-md);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            z-index: 70;
+            max-width: 90vw;
+            text-align: center;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* =========================================================
+           8. iPhone / iPad / 모바일 Safari 반응형 레이아웃 최적화
+           ========================================================= */
+        @media (max-width: 768px) {
+            .brand-title, .brand-badge { display: none; }
+            .hide-mobile { display: none !important; }
+            .show-mobile-only { display: inline-flex !important; }
+
+            .toolbar {
+                flex-wrap: nowrap;
+                padding-top: calc(6px + env(safe-area-inset-top));
+                padding-bottom: 6px;
+                padding-left: calc(10px + env(safe-area-inset-left));
+                padding-right: calc(10px + env(safe-area-inset-right));
+                gap: 6px;
+            }
+
+            .btn {
+                min-height: 40px;
+                padding: 0 10px;
+                font-size: 13px;
+            }
+
+            .btn-icon {
+                width: 40px;
+                min-width: 40px;
+            }
+
+            /* 모바일 검색 드롭다운 바 */
+            .mobile-search-bar {
+                background-color: var(--bg-surface);
+                border-bottom: 1px solid var(--border-color);
+                padding: 7px calc(10px + env(safe-area-inset-right)) 7px calc(10px + env(safe-area-inset-left));
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                z-index: 33;
+                flex-shrink: 0;
+            }
+
+            .mobile-search-bar .search-box {
+                max-width: none;
+                min-width: 0;
+                width: 100%;
+                min-height: 40px;
+            }
+
+            .mobile-search-bar .search-nav-btn {
+                width: 34px;
+                height: 34px;
+            }
+
+            /* 모바일 북마크 바텀 시트 */
+            .bookmark-drawer {
+                position: fixed;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                top: auto;
+                width: 100%;
+                max-width: 100%;
+                height: 70vh;
+                height: 70dvh;
+                max-height: 84dvh;
+                border-left: none;
+                border-top: 1px solid var(--border-color);
+                border-radius: 18px 18px 0 0;
+                box-shadow: var(--shadow-lg);
+                z-index: 55;
+                animation: sheetSlideUp 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+            }
+
+            @keyframes sheetSlideUp {
+                from { transform: translateY(100%); }
+                to { transform: translateY(0); }
+            }
+
+            .sheet-handle-bar {
+                display: flex;
+            }
+
+            .status-filename {
+                max-width: 115px;
+            }
+
+            .resume-banner {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-shell">
+    <!-- =========================================================
+         상단 툴바 (모바일 Safari 한 줄 컴팩트 배치)
+         ========================================================= -->
+    <header class="toolbar">
+        <div class="toolbar-group" style="flex-wrap: nowrap;">
+            <div class="brand">
+                <div class="brand-icon" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                    </svg>
+                </div>
+                <span class="brand-title">텍스트 뷰어</span>
+                <span class="brand-badge">대용량 엔진</span>
+            </div>
+
+            <!-- iOS 파일 앱에서 .log / 확장자 없는 파일 비활성화 방지를 위해 accept 제한 제거 -->
+            <input type="file" id="fileInput" hidden>
+
+            <button id="openFileBtn" class="btn btn-primary" title="로컬 또는 iCloud 파일 앱에서 텍스트 열기">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                <span>파일 열기</span>
+            </button>
+
+            <button id="genSampleBtn" class="btn hide-mobile" title="약 16MB(25만 줄) 대용량 한국어 로그/소설 샘플 생성">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                </svg>
+                <span>16MB 샘플 생성</span>
+            </button>
+
+            <!-- 인코딩 선택 (데스크톱 상단 배치) -->
+            <div class="segment-group hide-mobile" title="한글 깨짐 방지를 위한 문자 인코딩 즉시 전환">
+                <button class="segment-btn encoding-btn active" data-encoding="utf-8">UTF-8</button>
+                <button class="segment-btn encoding-btn" data-encoding="euc-kr">EUC-KR</button>
+            </div>
+        </div>
+
+        <div class="toolbar-group" style="flex: 1; justify-content: flex-end; flex-wrap: nowrap;">
+            <!-- 데스크톱 본문 고속 검색 -->
+            <div id="desktopSearchSlot" class="hide-mobile" style="display:flex; flex:1; justify-content:flex-end;">
+                <div id="searchBoxContainer" class="search-box">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    <input type="text" id="searchInput" class="search-input" placeholder="본문 검색 (Ctrl+F)..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                    <span id="searchCount" class="search-count">0/0</span>
+                    <button id="caseSensitiveBtn" class="search-nav-btn" title="대소문자 구분">Aa</button>
+                    <button id="prevMatchBtn" class="search-nav-btn" title="이전 검색 결과 (Shift+Enter)" disabled>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+                    </button>
+                    <button id="nextMatchBtn" class="search-nav-btn" title="다음 검색 결과 (Enter)" disabled>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 모바일 전용 검색 바 토글 버튼 -->
+            <button id="toggleMobileSearchBtn" class="btn btn-icon show-mobile-only" title="본문 검색 열기/닫기" aria-label="본문 검색">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+            </button>
+
+            <!-- 북마크 빠른 추가 & 사이드 패널/바텀 시트 토글 -->
+            <button id="quickBookmarkBtn" class="btn hide-mobile" title="현재 화면 상단 줄 북마크 추가/해제 (Ctrl+B)" disabled>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                    <line x1="12" y1="7" x2="12" y2="13"/>
+                    <line x1="9" y1="10" x2="15" y2="10"/>
+                </svg>
+                <span>북마크 추가</span>
+            </button>
+
+            <button id="toggleBookmarkDrawerBtn" class="btn btn-bookmark" title="북마크 목록 열기/닫기">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                </svg>
+                <span class="hide-mobile">북마크</span>
+                <span id="bookmarkBadge" class="count-pill">0</span>
+            </button>
+
+            <button id="copyAllBtn" class="btn btn-icon hide-mobile" title="전체 텍스트 클립보드 복사">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                </svg>
+            </button>
+
+            <button id="toggleSettingsBtn" class="btn" title="읽기 환경 및 인코딩 설정 열기/닫기">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/>
+                    <line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/>
+                    <line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/>
+                    <line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>
+                </svg>
+                <span class="hide-mobile">보기 설정</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- 모바일 전용 접이식 검색 바 -->
+    <div id="mobileSearchBar" class="mobile-search-bar hidden"></div>
+
+    <!-- =========================================================
+         읽기 환경 설정 바 (모바일에서는 인코딩/샘플/북마크추가 포함)
+         ========================================================= -->
+    <div id="settingsBar" class="settings-bar hidden">
+        <!-- 모바일 전용 빠른 도구 -->
+        <div class="setting-item show-mobile-only" style="width:100%; justify-content:space-between; flex-wrap:wrap; padding-bottom:6px; border-bottom:1px solid var(--border-color);">
+            <div class="segment-group" title="문자 인코딩 전환">
+                <button class="segment-btn encoding-btn active" data-encoding="utf-8">UTF-8</button>
+                <button class="segment-btn encoding-btn" data-encoding="euc-kr">EUC-KR</button>
+            </div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                <button id="mobileQuickBookmarkBtn" class="btn btn-sm" disabled>현재 줄 북마크</button>
+                <button id="mobileGenSampleBtn" class="btn btn-sm">16MB 샘플</button>
+                <button id="mobileCopyAllBtn" class="btn btn-sm">전체 복사</button>
+            </div>
+        </div>
+
+        <!-- 테마 -->
+        <div class="setting-item">
+            <span class="setting-label">테마</span>
+            <div class="segment-group">
+                <button class="segment-btn theme-btn active" data-theme="light">
+                    <span class="theme-dot" style="background:#ffffff;"></span>라이트
+                </button>
+                <button class="segment-btn theme-btn" data-theme="sepia">
+                    <span class="theme-dot" style="background:#efe6d0;"></span>세피아
+                </button>
+                <button class="segment-btn theme-btn" data-theme="dark">
+                    <span class="theme-dot" style="background:#131c31;"></span>다크
+                </button>
+            </div>
+        </div>
+
+        <!-- 글꼴 -->
+        <div class="setting-item">
+            <span class="setting-label">글꼴</span>
+            <div class="segment-group">
+                <button class="segment-btn font-btn active" data-font="sans">고딕</button>
+                <button class="segment-btn font-btn" data-font="serif">바탕</button>
+                <button class="segment-btn font-btn" data-font="mono">고정폭</button>
+            </div>
+        </div>
+
+        <!-- 글자 크기 (12px ~ 32px) -->
+        <div class="setting-item">
+            <span class="setting-label">크기</span>
+            <div class="segment-group">
+                <button id="fontDecBtn" class="segment-btn" title="글자 축소">-</button>
+                <button id="fontResetBtn" class="segment-btn" title="15px 초기화" style="font-family:monospace;">15px</button>
+                <button id="fontIncBtn" class="segment-btn" title="글자 확대">+</button>
+            </div>
+        </div>
+
+        <!-- 줄 간격 -->
+        <div class="setting-item">
+            <span class="setting-label">줄간격</span>
+            <div class="segment-group">
+                <button class="segment-btn leading-btn" data-leading="1.45">좁게</button>
+                <button class="segment-btn leading-btn active" data-leading="1.75">보통</button>
+                <button class="segment-btn leading-btn" data-leading="2.1">넓게</button>
+            </div>
+        </div>
+
+        <!-- 줄 번호 & 자동 줄바꿈 -->
+        <div class="setting-item">
+            <button id="toggleLineNumBtn" class="btn btn-toggle active">줄 번호</button>
+            <button id="toggleWrapBtn" class="btn btn-toggle" title="끄면 고정 행 높이 + 가로 스크롤로 100만 줄도 60fps 정밀 스크롤">자동 줄바꿈</button>
+        </div>
+    </div>
+
+    <!-- =========================================================
+         마지막 읽은 위치 복원 배너
+         ========================================================= -->
+    <div id="resumeBanner" class="resume-banner hidden">
+        <div class="resume-info">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span id="resumeBannerText">마지막 읽은 위치(1줄)로 이동할까요?</span>
+        </div>
+        <div class="resume-actions">
+            <button id="resumeJumpBtn" class="btn btn-primary btn-sm">이동하기</button>
+            <button id="resumeDismissBtn" class="btn btn-sm">닫기</button>
+        </div>
+    </div>
+
+    <!-- =========================================================
+         메인 작업 영역 (가상 스크롤 뷰포트 + 북마크 드로어/바텀 시트)
+         ========================================================= -->
+    <div class="workspace">
+        <main id="dropZone" class="main-area">
+            <!-- 드래그 앤 드롭 안내 오버레이 -->
+            <div id="dragOverlay" class="drag-overlay hidden">
+                <div class="drag-card">
+                    <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto 10px;">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    <div style="font-size:16px; font-weight:700;">여기에 텍스트 파일을 놓으세요</div>
+                    <div style="font-size:12.5px; color:var(--text-secondary); margin-top:4px;">16MB~100MB+ 대용량 파일도 가상 스크롤로 즉시 열립니다</div>
+                </div>
+            </div>
+
+            <!-- 로딩 / 처리 중 오버레이 -->
+            <div id="loadingOverlay" class="loading-overlay hidden">
+                <div class="loading-card">
+                    <div class="spinner"></div>
+                    <div id="loadingText">대용량 파일 인덱싱 중...</div>
+                </div>
+            </div>
+
+            <!-- 초기 빈 화면 -->
+            <div id="emptyState" class="empty-state">
+                <div class="empty-card">
+                    <div class="empty-icon-wrap">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                        </svg>
+                    </div>
+                    <h1 class="empty-title">대용량 텍스트 파일 뷰어</h1>
+                    <p class="empty-desc">
+                        가상 스크롤(Virtual Scrolling) 렌더링 엔진으로 <strong>16MB~100MB 이상</strong>의 로그·소설·CSV 파일을 Mac, iPad, iPhone Safari에서 60fps로 쾌적하게 탐색하며 보기 설정·북마크·읽은 위치를 자동 저장합니다.
+                    </p>
+                    <div class="empty-actions">
+                        <button id="emptyOpenBtn" class="btn btn-primary">파일 앱에서 열기</button>
+                        <button id="emptySmallSampleBtn" class="btn">미니 샘플 열기</button>
+                        <button id="emptySampleBtn" class="btn">16MB(25만 줄) 테스트</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 가상 스크롤 뷰포트 -->
+            <div id="vsViewport" class="vs-viewport font-sans mode-nowrap hidden" style="font-size: 15px;">
+                <div id="vsSpacer" class="vs-spacer">
+                    <div id="vsContent" class="vs-content"></div>
+                </div>
+            </div>
+
+            <!-- 맨 위로 플로팅 버튼 -->
+            <button id="scrollTopBtn" class="fab-top hidden" title="맨 위로 이동">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="18 15 12 9 6 15"/>
+                </svg>
+            </button>
+        </main>
+
+        <!-- 모바일 바텀 시트 배경 딤 -->
+        <div id="drawerBackdrop" class="drawer-backdrop hidden"></div>
+
+        <!-- =========================================================
+             북마크 사이드 드로어 / 모바일 바텀 시트 패널
+             ========================================================= -->
+        <aside id="bookmarkDrawer" class="bookmark-drawer hidden" aria-label="북마크 목록">
+            <div class="sheet-handle-bar" aria-hidden="true">
+                <div class="sheet-handle-pill"></div>
+            </div>
+            <div class="drawer-header">
+                <div class="drawer-title">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="var(--bookmark-color)" stroke="var(--bookmark-color)" stroke-width="1.5">
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    <span>북마크 목록</span>
+                    <span id="drawerCountText" style="font-size:12px; color:var(--text-muted); font-weight:500;">(0개)</span>
+                </div>
+                <button id="closeBookmarkDrawerBtn" class="search-nav-btn" title="패널 닫기">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="drawer-toolbar">
+                <div style="display:flex; align-items:center; gap:4px;">
+                    <button id="prevBookmarkBtn" class="btn btn-sm" title="이전 북마크 (Shift+F2)" disabled>이전 (Shift+F2)</button>
+                    <button id="nextBookmarkBtn" class="btn btn-sm" title="다음 북마크 (F2)" disabled>다음 (F2)</button>
+                </div>
+                <button id="clearAllBookmarksBtn" class="btn btn-danger-ghost" disabled>북마크 전체 삭제</button>
+            </div>
+
+            <div id="bookmarkList" class="drawer-list"></div>
+        </aside>
+    </div>
+
+    <!-- =========================================================
+         하단 상태바
+         ========================================================= -->
+    <footer class="statusbar">
+        <div class="status-left">
+            <span id="statFileName" class="status-filename">열린 파일 없음</span>
+            <span class="status-divider"></span>
+            <span id="statFileSize">0 B</span>
+            <span class="status-divider hide-mobile"></span>
+            <span id="statEncoding" class="hide-mobile">UTF-8</span>
+            <span class="status-divider hide-mobile"></span>
+            <span id="statParseTime" class="hide-mobile">파싱: 0ms</span>
+        </div>
+
+        <div class="status-right">
+            <!-- 줄 이동 (Ctrl+G) 모달 트리거 -->
+            <button id="openGotoModalBtn" class="status-clickable" title="특정 줄 번호로 바로 이동 (Ctrl+G)" disabled>
+                <span>현재 <strong id="statCurrentLine">0</strong> / 총 <strong id="statTotalLines">0</strong>줄</span>
+                <span style="color:var(--accent); font-weight:600; margin-left:3px;">줄 이동</span>
+            </button>
+
+            <span class="status-divider hide-mobile"></span>
+
+            <div class="progress-wrap">
+                <div class="progress-track hide-mobile">
+                    <div id="progressFill" class="progress-fill"></div>
+                </div>
+                <span id="statProgress" class="progress-text">0.0%</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 줄 이동 (Ctrl+G) 모달 -->
+    <div id="gotoModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="gotoModalTitle">
+        <div class="modal-card">
+            <div id="gotoModalTitle" class="modal-title">특정 줄로 이동 (Ctrl+G)</div>
+            <div id="gotoModalSub" class="modal-sub">1부터 1 사이의 줄 번호를 입력하세요.</div>
+            <input type="number" id="gotoModalInput" class="modal-input" min="1" inputmode="numeric" placeholder="예: 12500">
+            <div class="modal-actions">
+                <button id="gotoModalCancelBtn" class="btn">취소</button>
+                <button id="gotoModalConfirmBtn" class="btn btn-primary">이동</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 토스트 알림 -->
+    <div id="toast" class="toast">알림</div>
+</div>
+
+<script>
+/**
+ * ============================================================================
+ * 고성능 대용량 텍스트 파일 뷰어 (Safari & 모바일/태블릿 최적화 엔진)
+ * ============================================================================
+ */
+(function () {
+    'use strict';
+
+    // 브라우저 CSS 높이 제한 안전 상한선 (1,200만 px)
+    const MAX_SCROLL_HEIGHT = 12000000;
+    // 뷰포트 상하 여유 버퍼 줄 수
+    const OVERSCAN_LINES = 18;
+    // 전체 복사 안전 용량 상한 (10MB)
+    const MAX_COPY_BYTES = 10 * 1024 * 1024;
+    // 비동기 검색 블록 크기 (~512KB)
+    const SEARCH_BLOCK_CHARS = 524288;
+    // localStorage 키
+    const STORAGE_PREFIX = 'tv_v2_meta_';
+    const PREFS_STORAGE_KEY = 'tv_v2_prefs';
+
+    // 유효 설정값 화이트리스트
+    const VALID_THEMES = ['light', 'sepia', 'dark'];
+    const VALID_FONTS = ['sans', 'serif', 'mono'];
+    const VALID_LEADINGS = [1.45, 1.75, 2.1];
+    const VALID_ENCODINGS = ['utf-8', 'euc-kr'];
+
+    // 테마별 Safari 상태바 / theme-color 메타 값
+    const THEME_META = {
+        light: { color: '#f8fafc', statusBar: 'default' },
+        sepia: { color: '#f4ecd8', statusBar: 'default' },
+        dark:  { color: '#0b1120', statusBar: 'black-translucent' }
+    };
+
+    // 전역 상태
+    const state = {
+        fileBlob: null,           // File 또는 Blob 참조 (ArrayBuffer 상주 메모리 절감)
+        fileName: '',             // 파일명
+        fileSize: 0,              // 바이트 크기
+        encoding: 'utf-8',        // 'utf-8' | 'euc-kr'
+        rawText: '',              // 디코딩된 전체 문자열
+        lineStarts: null,         // Int32Array: 각 줄의 시작 문자 인덱스
+        lineEnds: null,           // Int32Array: 각 줄의 끝 문자 인덱스 (\r\n 제외)
+        totalLines: 0,            // 총 줄 수
+        parseTimeMs: 0,           // 파싱 시간(ms)
+
+        // 보기 설정 (localStorage 자동 저장/복원 대상)
+        theme: 'light',           // 'light' | 'sepia' | 'dark'
+        fontFamily: 'sans',       // 'sans' | 'serif' | 'mono'
+        fontSize: 15,             // px (12 ~ 32)
+        lineHeightRatio: 1.75,    // 줄 간격 배수
+        showLineNumbers: true,    // 줄 번호 표시 여부
+        wordWrap: false,          // 자동 줄바꿈 여부
+
+        // 가상 스크롤 메트릭
+        baseRowHeight: 26,
+        prefixHeights: null,      // Float64Array (가변 높이 누적 오프셋)
+        logicalTotalHeight: 0,
+        virtualScrollHeight: 0,
+        scaleFactor: 1,
+
+        // 검색 상태
+        searchQuery: '',
+        caseSensitive: false,     // localStorage 자동 저장/복원 대상
+        matchLineIndices: [],
+        currentMatchCursor: -1,
+        searchToken: 0,           // 비동기 검색 취소용 토큰
+
+        // 북마크 & 읽은 위치 상태
+        bookmarks: new Map(),     // key: 1-based lineNumber (number), value: { line: number, memo: string }
+        activeBookmarkLine: null, // F2 / Shift+F2 순회 기준 북마크 줄 번호
+        pendingResumeLine: null,  // 파일 재오픈 시 복원 제안할 줄 번호(1-based)
+        clearConfirmTimer: null,  // 전체 삭제 2단계 확인 타이머
+        suppressSaveUntil: 0,     // 파일 초기 로드 시 자동 저장 방지 타임스탬프
+
+        // 렌더링 스케줄링
+        rafPending: false,
+        savePosTimer: null,
+        lastRenderedStart: -1,
+        lastRenderedEnd: -1
+    };
+
+    // DOM 요소 참조
+    const els = {
+        themeColorMeta: document.getElementById('themeColorMeta'),
+        appleStatusBarMeta: document.getElementById('appleStatusBarMeta'),
+
+        fileInput: document.getElementById('fileInput'),
+        openFileBtn: document.getElementById('openFileBtn'),
+        emptyOpenBtn: document.getElementById('emptyOpenBtn'),
+        emptySmallSampleBtn: document.getElementById('emptySmallSampleBtn'),
+        genSampleBtn: document.getElementById('genSampleBtn'),
+        mobileGenSampleBtn: document.getElementById('mobileGenSampleBtn'),
+        emptySampleBtn: document.getElementById('emptySampleBtn'),
+        encodingBtns: document.querySelectorAll('.encoding-btn'),
+
+        desktopSearchSlot: document.getElementById('desktopSearchSlot'),
+        mobileSearchBar: document.getElementById('mobileSearchBar'),
+        toggleMobileSearchBtn: document.getElementById('toggleMobileSearchBtn'),
+        searchBoxContainer: document.getElementById('searchBoxContainer'),
+        searchInput: document.getElementById('searchInput'),
+        searchCount: document.getElementById('searchCount'),
+        caseSensitiveBtn: document.getElementById('caseSensitiveBtn'),
+        prevMatchBtn: document.getElementById('prevMatchBtn'),
+        nextMatchBtn: document.getElementById('nextMatchBtn'),
+
+        quickBookmarkBtn: document.getElementById('quickBookmarkBtn'),
+        mobileQuickBookmarkBtn: document.getElementById('mobileQuickBookmarkBtn'),
+        toggleBookmarkDrawerBtn: document.getElementById('toggleBookmarkDrawerBtn'),
+        bookmarkBadge: document.getElementById('bookmarkBadge'),
+
+        copyAllBtn: document.getElementById('copyAllBtn'),
+        mobileCopyAllBtn: document.getElementById('mobileCopyAllBtn'),
+        toggleSettingsBtn: document.getElementById('toggleSettingsBtn'),
+        settingsBar: document.getElementById('settingsBar'),
+
+        themeBtns: document.querySelectorAll('.theme-btn'),
+        fontBtns: document.querySelectorAll('.font-btn'),
+        fontDecBtn: document.getElementById('fontDecBtn'),
+        fontResetBtn: document.getElementById('fontResetBtn'),
+        fontIncBtn: document.getElementById('fontIncBtn'),
+        leadingBtns: document.querySelectorAll('.leading-btn'),
+        toggleLineNumBtn: document.getElementById('toggleLineNumBtn'),
+        toggleWrapBtn: document.getElementById('toggleWrapBtn'),
+
+        resumeBanner: document.getElementById('resumeBanner'),
+        resumeBannerText: document.getElementById('resumeBannerText'),
+        resumeJumpBtn: document.getElementById('resumeJumpBtn'),
+        resumeDismissBtn: document.getElementById('resumeDismissBtn'),
+
+        dropZone: document.getElementById('dropZone'),
+        dragOverlay: document.getElementById('dragOverlay'),
+        loadingOverlay: document.getElementById('loadingOverlay'),
+        loadingText: document.getElementById('loadingText'),
+        emptyState: document.getElementById('emptyState'),
+
+        vsViewport: document.getElementById('vsViewport'),
+        vsSpacer: document.getElementById('vsSpacer'),
+        vsContent: document.getElementById('vsContent'),
+        scrollTopBtn: document.getElementById('scrollTopBtn'),
+
+        drawerBackdrop: document.getElementById('drawerBackdrop'),
+        bookmarkDrawer: document.getElementById('bookmarkDrawer'),
+        drawerCountText: document.getElementById('drawerCountText'),
+        closeBookmarkDrawerBtn: document.getElementById('closeBookmarkDrawerBtn'),
+        prevBookmarkBtn: document.getElementById('prevBookmarkBtn'),
+        nextBookmarkBtn: document.getElementById('nextBookmarkBtn'),
+        clearAllBookmarksBtn: document.getElementById('clearAllBookmarksBtn'),
+        bookmarkList: document.getElementById('bookmarkList'),
+
+        statFileName: document.getElementById('statFileName'),
+        statFileSize: document.getElementById('statFileSize'),
+        statEncoding: document.getElementById('statEncoding'),
+        statParseTime: document.getElementById('statParseTime'),
+        openGotoModalBtn: document.getElementById('openGotoModalBtn'),
+        statCurrentLine: document.getElementById('statCurrentLine'),
+        statTotalLines: document.getElementById('statTotalLines'),
+        progressFill: document.getElementById('progressFill'),
+        statProgress: document.getElementById('statProgress'),
+
+        gotoModal: document.getElementById('gotoModal'),
+        gotoModalSub: document.getElementById('gotoModalSub'),
+        gotoModalInput: document.getElementById('gotoModalInput'),
+        gotoModalCancelBtn: document.getElementById('gotoModalCancelBtn'),
+        gotoModalConfirmBtn: document.getElementById('gotoModalConfirmBtn'),
+
+        toast: document.getElementById('toast')
+    };
+
+    /* ========================================================================
+       사용자 보기 설정 localStorage 자동 저장 & 복원
+       ======================================================================== */
+    function saveUserPreferences() {
+        try {
+            const payload = {
+                theme: state.theme,
+                fontFamily: state.fontFamily,
+                fontSize: state.fontSize,
+                lineHeightRatio: state.lineHeightRatio,
+                showLineNumbers: state.showLineNumbers,
+                wordWrap: state.wordWrap,
+                encoding: state.encoding,
+                caseSensitive: state.caseSensitive
+            };
+            localStorage.setItem(PREFS_STORAGE_KEY, JSON.stringify(payload));
+        } catch (err) {
+            console.warn('보기 설정 저장 실패:', err);
+        }
+    }
+
+    function applyTheme(theme, persist = true) {
+        const safeTheme = VALID_THEMES.includes(theme) ? theme : 'light';
+        state.theme = safeTheme;
+        document.documentElement.setAttribute('data-theme', safeTheme);
+        els.themeBtns.forEach(b => b.classList.toggle('active', b.dataset.theme === safeTheme));
+        const meta = THEME_META[safeTheme] || THEME_META.light;
+        if (els.themeColorMeta) els.themeColorMeta.setAttribute('content', meta.color);
+        if (els.appleStatusBarMeta) els.appleStatusBarMeta.setAttribute('content', meta.statusBar);
+        if (persist) saveUserPreferences();
+    }
+
+    function syncPreferencesUI() {
+        applyTheme(state.theme, false);
+
+        // 글꼴
+        els.vsViewport.classList.remove('font-sans', 'font-serif', 'font-mono');
+        els.vsViewport.classList.add(`font-${state.fontFamily}`);
+        els.fontBtns.forEach(b => b.classList.toggle('active', b.dataset.font === state.fontFamily));
+
+        // 글자 크기 & 줄간격
+        els.vsViewport.style.fontSize = `${state.fontSize}px`;
+        els.fontResetBtn.textContent = `${state.fontSize}px`;
+        state.baseRowHeight = Math.max(18, Math.round(state.fontSize * state.lineHeightRatio));
+        els.vsViewport.style.setProperty('--vs-row-h', `${state.baseRowHeight}px`);
+        els.leadingBtns.forEach(b => b.classList.toggle('active', parseFloat(b.dataset.leading) === state.lineHeightRatio));
+
+        // 줄 번호 & 자동 줄바꿈
+        els.toggleLineNumBtn.classList.toggle('active', state.showLineNumbers);
+        els.toggleWrapBtn.classList.toggle('active', state.wordWrap);
+        els.vsViewport.classList.toggle('mode-wrap', state.wordWrap);
+        els.vsViewport.classList.toggle('mode-nowrap', !state.wordWrap);
+
+        // 인코딩
+        els.encodingBtns.forEach(b => b.classList.toggle('active', b.dataset.encoding === state.encoding));
+        els.statEncoding.textContent = state.encoding.toUpperCase();
+
+        // 검색 대소문자 구분
+        els.caseSensitiveBtn.classList.toggle('active', state.caseSensitive);
+    }
+
+    function loadUserPreferences() {
+        try {
+            const raw = localStorage.getItem(PREFS_STORAGE_KEY);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (parsed && typeof parsed === 'object') {
+                    if (VALID_THEMES.includes(parsed.theme)) {
+                        state.theme = parsed.theme;
+                    }
+                    if (VALID_FONTS.includes(parsed.fontFamily)) {
+                        state.fontFamily = parsed.fontFamily;
+                    }
+                    const parsedSize = Number(parsed.fontSize);
+                    if (Number.isFinite(parsedSize)) {
+                        state.fontSize = Math.min(32, Math.max(12, Math.round(parsedSize)));
+                    }
+                    const parsedLeading = Number(parsed.lineHeightRatio);
+                    if (VALID_LEADINGS.includes(parsedLeading)) {
+                        state.lineHeightRatio = parsedLeading;
+                    }
+                    if (typeof parsed.showLineNumbers === 'boolean') {
+                        state.showLineNumbers = parsed.showLineNumbers;
+                    }
+                    if (typeof parsed.wordWrap === 'boolean') {
+                        state.wordWrap = parsed.wordWrap;
+                    }
+                    if (VALID_ENCODINGS.includes(parsed.encoding)) {
+                        state.encoding = parsed.encoding;
+                    }
+                    if (typeof parsed.caseSensitive === 'boolean') {
+                        state.caseSensitive = parsed.caseSensitive;
+                    }
+                }
+            }
+        } catch (err) {
+            console.warn('보기 설정 불러오기 실패:', err);
+        }
+
+        syncPreferencesUI();
+    }
+
+    /* ========================================================================
+       뷰포트 너비에 따른 검색창 위치 및 모바일 백드롭 동기화
+       ======================================================================== */
+    function syncResponsiveLayout() {
+        const isMobile = window.innerWidth <= 768;
+        if (isMobile) {
+            if (els.searchBoxContainer.parentElement !== els.mobileSearchBar) {
+                els.mobileSearchBar.appendChild(els.searchBoxContainer);
+            }
+        } else {
+            els.mobileSearchBar.classList.add('hidden');
+            els.toggleMobileSearchBtn.classList.remove('active');
+            if (els.searchBoxContainer.parentElement !== els.desktopSearchSlot) {
+                els.desktopSearchSlot.appendChild(els.searchBoxContainer);
+            }
+        }
+
+        const isDrawerOpen = !els.bookmarkDrawer.classList.contains('hidden');
+        els.drawerBackdrop.classList.toggle('hidden', !(isDrawerOpen && isMobile));
+    }
+    syncResponsiveLayout();
+
+    /* ========================================================================
+       유틸리티 함수
+       ======================================================================== */
+    let toastTimer = null;
+    function showToast(msg) {
+        els.toast.textContent = msg;
+        els.toast.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+            els.toast.classList.remove('show');
+        }, 2300);
+    }
+
+    function setLoading(isLoading, text = '처리 중...') {
+        if (isLoading) {
+            els.loadingText.textContent = text;
+            els.loadingOverlay.classList.remove('hidden');
+        } else {
+            els.loadingOverlay.classList.add('hidden');
+        }
+    }
+
+    function formatBytes(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const units = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return (bytes / Math.pow(k, i)).toFixed(i === 0 ? 0 : 2) + ' ' + units[i];
+    }
+
+    function escapeHtml(str) {
+        return str
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function escapeRegExp(str) {
+        return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    function getGutterWidth() {
+        const digits = String(Math.max(1, state.totalLines)).length;
+        return state.showLineNumbers ? Math.max(54, digits * 9 + 30) : 34;
+    }
+
+    function getLineText(idx) {
+        if (idx < 0 || idx >= state.totalLines || !state.lineStarts) return '';
+        return state.rawText.slice(state.lineStarts[idx], state.lineEnds[idx]);
+    }
+
+    /**
+     * 전체 텍스트를 줄 단위 Int32Array 오프셋 테이블로 고속 인덱싱
+     */
+    function buildLineIndex(text) {
+        const len = text.length;
+        let capacity = Math.max(1024, (len >> 5) + 16);
+        let starts = new Int32Array(capacity);
+        let ends = new Int32Array(capacity);
+        let count = 0;
+        let lineStart = 0;
+
+        for (let i = 0; i < len; i++) {
+            const code = text.charCodeAt(i);
+            if (code === 10 || code === 13) { // \n or \r
+                if (count >= capacity) {
+                    const nextCap = capacity * 2;
+                    const nextStarts = new Int32Array(nextCap);
+                    const nextEnds = new Int32Array(nextCap);
+                    nextStarts.set(starts);
+                    nextEnds.set(ends);
+                    starts = nextStarts;
+                    ends = nextEnds;
+                    capacity = nextCap;
+                }
+                starts[count] = lineStart;
+                ends[count] = i;
+                count++;
+                if (code === 13 && i + 1 < len && text.charCodeAt(i + 1) === 10) {
+                    i++;
+                }
+                lineStart = i + 1;
+            }
+        }
+
+        if (count >= capacity) {
+            const nextStarts = new Int32Array(count + 1);
+            const nextEnds = new Int32Array(count + 1);
+            nextStarts.set(starts);
+            nextEnds.set(ends);
+            starts = nextStarts;
+            ends = nextEnds;
+        }
+        starts[count] = lineStart;
+        ends[count] = len;
+        count++;
+
+        state.lineStarts = starts.subarray(0, count);
+        state.lineEnds = ends.subarray(0, count);
+        state.totalLines = count;
+    }
+
+    /**
+     * 문자 인덱스(charPos)가 속한 0-based 줄 번호를 이진 탐색으로 반환
+     */
+    function findLineIndexAtCharPos(charPos, low, high) {
+        let ans = low;
+        while (low <= high) {
+            const mid = (low + high) >>> 1;
+            if (state.lineStarts[mid] <= charPos) {
+                ans = mid;
+                low = mid + 1;
+            } else {
+                high = mid - 1;
+            }
+        }
+        return ans;
+    }
+
+    /* ========================================================================
+       localStorage 북마크 및 마지막 읽은 위치 영속화
+       ======================================================================== */
+    function getStorageKey() {
+        if (!state.fileName) return null;
+        return `${STORAGE_PREFIX}${state.fileName}_${state.fileSize}`;
+    }
+
+    function saveFileMetadata() {
+        const key = getStorageKey();
+        if (!key || state.totalLines === 0) return;
+
+        try {
+            const currentTopLine = findLineIndexAtY(getLogicalScrollTop()) + 1;
+            const bookmarksArray = Array.from(state.bookmarks.values())
+                .sort((a, b) => a.line - b.line);
+
+            const payload = {
+                bookmarks: bookmarksArray,
+                lastReadLine: currentTopLine,
+                updatedAt: Date.now()
+            };
+            localStorage.setItem(key, JSON.stringify(payload));
+        } catch (err) {
+            console.warn('localStorage 저장 실패:', err);
+        }
+    }
+
+    function scheduleSavePosition() {
+        if (performance.now() < state.suppressSaveUntil) return;
+        clearTimeout(state.savePosTimer);
+        state.savePosTimer = setTimeout(() => {
+            saveFileMetadata();
+        }, 400);
+    }
+
+    function flushSavePosition() {
+        if (state.totalLines === 0 || performance.now() < state.suppressSaveUntil) return;
+        clearTimeout(state.savePosTimer);
+        state.savePosTimer = null;
+        saveFileMetadata();
+    }
+
+    function loadFileMetadata() {
+        state.bookmarks.clear();
+        state.activeBookmarkLine = null;
+        state.pendingResumeLine = null;
+        els.resumeBanner.classList.add('hidden');
+
+        const key = getStorageKey();
+        if (!key) {
+            renderBookmarkDrawer();
+            return;
+        }
+
+        try {
+            const raw = localStorage.getItem(key);
+            if (!raw) {
+                renderBookmarkDrawer();
+                return;
+            }
+            const parsed = JSON.parse(raw);
+
+            if (Array.isArray(parsed.bookmarks)) {
+                parsed.bookmarks.forEach(item => {
+                    const lineNum = parseInt(item.line, 10);
+                    if (!isNaN(lineNum) && lineNum >= 1 && lineNum <= state.totalLines) {
+                        state.bookmarks.set(lineNum, {
+                            line: lineNum,
+                            memo: typeof item.memo === 'string' ? item.memo : ''
+                        });
+                    }
+                });
+            }
+
+            const savedLine = parseInt(parsed.lastReadLine, 10);
+            if (!isNaN(savedLine) && savedLine > 1 && savedLine <= state.totalLines) {
+                state.pendingResumeLine = savedLine;
+                const pct = ((savedLine / state.totalLines) * 100).toFixed(1);
+                els.resumeBannerText.textContent = `마지막 읽은 위치(${savedLine.toLocaleString()}줄 · ${pct}%)로 이동할까요?`;
+                els.resumeBanner.classList.remove('hidden');
+            }
+        } catch (err) {
+            console.warn('localStorage 불러오기 실패:', err);
+        }
+
+        renderBookmarkDrawer();
+    }
+
+    /* ========================================================================
+       북마크 관리 (토글, 메모, 순회, 전체 삭제, 사이드 패널/바텀 시트 UI)
+       ======================================================================== */
+    function toggleBookmark(lineNum, forceState = null) {
+        if (state.totalLines === 0 || lineNum < 1 || lineNum > state.totalLines) return;
+
+        const exists = state.bookmarks.has(lineNum);
+        const shouldAdd = forceState !== null ? forceState : !exists;
+
+        if (shouldAdd && !exists) {
+            state.bookmarks.set(lineNum, { line: lineNum, memo: '' });
+            showToast(`${lineNum.toLocaleString()}줄에 북마크를 추가했습니다.`);
+        } else if (!shouldAdd && exists) {
+            state.bookmarks.delete(lineNum);
+            if (state.activeBookmarkLine === lineNum) {
+                state.activeBookmarkLine = null;
+            }
+            showToast(`${lineNum.toLocaleString()}줄 북마크를 해제했습니다.`);
+        }
+
+        saveFileMetadata();
+        renderBookmarkDrawer();
+        state.lastRenderedStart = -1;
+        renderVisibleRows();
+    }
+
+    function updateBookmarkMemo(lineNum, memoText) {
+        const entry = state.bookmarks.get(lineNum);
+        if (!entry) return;
+        entry.memo = memoText;
+        saveFileMetadata();
+    }
+
+    function getSortedBookmarkLines() {
+        return Array.from(state.bookmarks.keys()).sort((a, b) => a - b);
+    }
+
+    function navigateBookmark(direction) {
+        const sorted = getSortedBookmarkLines();
+        if (sorted.length === 0) {
+            showToast('저장된 북마크가 없습니다.');
+            return;
+        }
+
+        const logicalTop = getLogicalScrollTop();
+        const viewportHeight = els.vsViewport.clientHeight || 600;
+        const firstVisibleLine = findLineIndexAtY(logicalTop) + 1;
+        const lastVisibleLine = findLineIndexAtY(logicalTop + viewportHeight) + 1;
+
+        const hasVisibleActive =
+            state.activeBookmarkLine !== null &&
+            state.bookmarks.has(state.activeBookmarkLine) &&
+            state.activeBookmarkLine >= firstVisibleLine &&
+            state.activeBookmarkLine <= lastVisibleLine;
+
+        const anchorLine = hasVisibleActive ? state.activeBookmarkLine : firstVisibleLine;
+        let targetLine = sorted[0];
+
+        if (direction > 0) {
+            const next = sorted.find(ln => ln > anchorLine);
+            targetLine = next !== undefined ? next : sorted[0];
+        } else {
+            let prev = undefined;
+            for (let i = sorted.length - 1; i >= 0; i--) {
+                if (sorted[i] < anchorLine) {
+                    prev = sorted[i];
+                    break;
+                }
+            }
+            targetLine = prev !== undefined ? prev : sorted[sorted.length - 1];
+        }
+
+        state.activeBookmarkLine = targetLine;
+        jumpToLineWithPulse(targetLine, true);
+    }
+
+    function triggerRowPulse(lineNum) {
+        const row = els.vsContent.querySelector(`.vs-row[data-line="${lineNum}"]`);
+        if (!row) return;
+        row.classList.remove('is-pulse');
+        void row.offsetWidth;
+        row.classList.add('is-pulse');
+        const cleanup = () => row.classList.remove('is-pulse');
+        row.addEventListener('animationend', cleanup, { once: true });
+    }
+
+    function jumpToLineWithPulse(lineNum, isBookmarkJump = true) {
+        if (window.innerWidth <= 768 && !els.bookmarkDrawer.classList.contains('hidden')) {
+            toggleBookmarkDrawer(false);
+        }
+        if (isBookmarkJump && state.bookmarks.has(lineNum)) {
+            state.activeBookmarkLine = lineNum;
+        }
+        scrollToLine(lineNum - 1, true);
+        triggerRowPulse(lineNum);
+    }
+
+    function resetClearConfirmButton() {
+        clearTimeout(state.clearConfirmTimer);
+        state.clearConfirmTimer = null;
+        els.clearAllBookmarksBtn.textContent = '북마크 전체 삭제';
+        els.clearAllBookmarksBtn.className = 'btn btn-danger-ghost';
+    }
+
+    function renderBookmarkDrawer() {
+        const sorted = getSortedBookmarkLines();
+        const count = sorted.length;
+
+        els.bookmarkBadge.textContent = count;
+        els.drawerCountText.textContent = `(${count.toLocaleString()}개)`;
+        els.prevBookmarkBtn.disabled = count === 0;
+        els.nextBookmarkBtn.disabled = count === 0;
+        els.clearAllBookmarksBtn.disabled = count === 0;
+
+        if (count === 0) {
+            resetClearConfirmButton();
+            els.bookmarkList.innerHTML = `
+                <div class="drawer-empty">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.8" style="margin-bottom:10px;">
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    <div style="font-weight:600; color:var(--text-primary); margin-bottom:4px;">저장된 북마크가 없습니다</div>
+                    <div>왼쪽 줄 번호 영역을 터치·클릭하거나<br><strong>Ctrl+B</strong>를 눌러 현재 위치를 북마크하세요.</div>
+                </div>
+            `;
+            return;
+        }
+
+        const fragment = document.createDocumentFragment();
+
+        sorted.forEach(lineNum => {
+            const bm = state.bookmarks.get(lineNum);
+            const rawLine = getLineText(lineNum - 1);
+            const snippet = rawLine.trim().length > 0 ? rawLine.trim() : '(빈 줄)';
+            const pct = state.totalLines > 0
+                ? ((lineNum / state.totalLines) * 100).toFixed(1)
+                : '0.0';
+
+            const card = document.createElement('div');
+            card.className = 'bm-card';
+            card.innerHTML = `
+                <div class="bm-card-top">
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span class="bm-line-badge">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                            ${lineNum.toLocaleString()}줄
+                        </span>
+                        <span class="bm-percent">${pct}%</span>
+                    </div>
+                    <button class="bm-delete-btn" title="북마크 삭제" aria-label="북마크 삭제">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="bm-snippet" title="${escapeHtml(snippet)}">${escapeHtml(snippet)}</div>
+                <input type="text" class="bm-memo-input" placeholder="메모 입력 (예: 중요 장면, 에러 로그)..." value="${escapeHtml(bm.memo)}">
+            `;
+
+            card.addEventListener('click', (e) => {
+                if (e.target.closest('.bm-delete-btn') || e.target.closest('.bm-memo-input')) return;
+                jumpToLineWithPulse(lineNum, true);
+            });
+
+            const delBtn = card.querySelector('.bm-delete-btn');
+            delBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleBookmark(lineNum, false);
+            });
+
+            const memoInput = card.querySelector('.bm-memo-input');
+            memoInput.addEventListener('click', (e) => e.stopPropagation());
+            memoInput.addEventListener('input', (e) => {
+                updateBookmarkMemo(lineNum, e.target.value);
+            });
+
+            fragment.appendChild(card);
+        });
+
+        els.bookmarkList.innerHTML = '';
+        els.bookmarkList.appendChild(fragment);
+    }
+
+    /* ========================================================================
+       파일 로딩 & Blob 기반 온디맨드 디코딩 엔진 (메모리 절감)
+       ======================================================================== */
+    function readBlobAsArrayBuffer(blob) {
+        if (typeof blob.arrayBuffer === 'function') {
+            return blob.arrayBuffer();
+        }
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = () => reject(new Error('파일 읽기 오류'));
+            reader.readAsArrayBuffer(blob);
+        });
+    }
+
+    function handleFileSelect(file) {
+        if (!file) return;
+        state.fileBlob = file;
+        state.fileName = file.name;
+        state.fileSize = file.size;
+        decodeAndIndexBlob(true, true);
+    }
+
+    function decodeAndIndexBlob(resetScroll = true, loadSavedMeta = false) {
+        if (!state.fileBlob) return;
+        setLoading(true, `'${state.fileName}' ${state.encoding.toUpperCase()} 디코딩 중...`);
+
+        requestAnimationFrame(() => {
+            setTimeout(async () => {
+                try {
+                    const t0 = performance.now();
+                    const buffer = await readBlobAsArrayBuffer(state.fileBlob);
+                    const decoder = new TextDecoder(state.encoding);
+                    const text = decoder.decode(buffer);
+
+                    // buffer는 스코프 종료 시 즉시 GC 대상이 되어 RAM 이중 점유 방지
+                    state.rawText = text;
+                    buildLineIndex(text);
+                    const t1 = performance.now();
+                    state.parseTimeMs = Math.round(t1 - t0);
+
+                    // UI 활성화
+                    els.emptyState.classList.add('hidden');
+                    els.vsViewport.classList.remove('hidden');
+                    els.quickBookmarkBtn.disabled = false;
+                    els.mobileQuickBookmarkBtn.disabled = false;
+                    els.openGotoModalBtn.disabled = false;
+
+                    // 상태바 갱신
+                    els.statFileName.textContent = state.fileName;
+                    els.statFileName.title = state.fileName;
+                    els.statFileSize.textContent = formatBytes(state.fileSize);
+                    els.statEncoding.textContent = state.encoding.toUpperCase();
+                    els.statParseTime.textContent = `파싱: ${state.parseTimeMs}ms`;
+                    els.statTotalLines.textContent = state.totalLines.toLocaleString();
+
+                    recalculateMetrics();
+
+                    if (resetScroll) {
+                        state.suppressSaveUntil = performance.now() + 500;
+                        els.vsViewport.scrollTop = 0;
+                    }
+
+                    if (loadSavedMeta) {
+                        loadFileMetadata();
+                    } else {
+                        // 인코딩 전환 시에도 북마크 미리보기 스니펫 즉시 갱신
+                        renderBookmarkDrawer();
+                    }
+
+                    if (state.searchQuery.trim().length > 0) {
+                        executeSearch(false);
+                    } else {
+                        state.searchToken++;
+                        state.matchLineIndices = [];
+                        state.currentMatchCursor = -1;
+                        updateSearchUI();
+                    }
+
+                    state.lastRenderedStart = -1;
+                    state.lastRenderedEnd = -1;
+                    renderVisibleRows();
+                    updateScrollStatus();
+
+                    setLoading(false);
+                    showToast(`${state.totalLines.toLocaleString()}줄 로드 완료 (${state.parseTimeMs}ms)`);
+                } catch (err) {
+                    console.error(err);
+                    setLoading(false);
+                    showToast('파일을 읽거나 디코딩하는 도중 오류가 발생했습니다.');
+                }
+            }, 16);
+        });
+    }
+
+    /**
+     * 미니 샘플 문서 생성 (빠른 기능 테스트용)
+     */
+    function generateMiniSample() {
+        const sampleText = [
+            '=== 고성능 한국어 텍스트 뷰어 안내 문서 ===',
+            '',
+            '1. 가상 스크롤(Virtual Scrolling) 렌더링 엔진',
+            '   화면에 보이는 영역과 위아래 버퍼(±18줄)만 DOM으로 생성하여',
+            '   16MB~100MB 이상의 대용량 소설, 로그, CSV 파일도 끊김 없이 탐색합니다.',
+            '',
+            '2. 한글 인코딩 즉시 전환 (UTF-8 / EUC-KR)',
+            '   원본 파일 참조(Blob)를 통해 상단 또는 보기 설정에서 UTF-8과 EUC-KR을',
+            '   메모리 낭비 없이 즉시 전환할 수 있습니다.',
+            '',
+            '3. 보기 설정·북마크·읽은 위치 자동 저장',
+            '   테마, 글꼴, 크기, 줄간격, 줄 번호, 자동 줄바꿈, 인코딩 설정은',
+            '   사이트를 닫았다가 다시 열어도 그대로 복원됩니다.',
+            '',
+            '4. iPhone · iPad · Mac Safari 완벽 최적화',
+            '   Safe Area 여백, 100dvh 동적 뷰포트, 테마별 theme-color 동기화,',
+            '   입력창 자동 확대 방지(16px), 모바일 바텀 시트 북마크 패널을 지원합니다.'
+        ].join('\n');
+
+        const blob = new Blob([sampleText], { type: 'text/plain;charset=utf-8' });
+        state.fileBlob = blob;
+        state.fileName = '가이드_미니샘플.txt';
+        state.fileSize = blob.size;
+        state.encoding = 'utf-8';
+        els.encodingBtns.forEach(b => b.classList.toggle('active', b.dataset.encoding === 'utf-8'));
+        decodeAndIndexBlob(true, true);
+    }
+
+    /**
+     * 16MB (250,000줄) 벤치마크용 대용량 한국어 테스트 파일 생성기
+     */
+    function generateLargeSample() {
+        setLoading(true, '16MB(250,000줄) 대용량 한국어 테스트 데이터 생성 중...');
+
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                const targetLines = 250000;
+                const templates = [
+                    '[INFO] 2026-11-24 20:45:12.401 [worker-04] 대용량 텍스트 스트림 청크 파싱 완료 - 메모리 점유율 정상 범위 유지 중입니다.',
+                    '[STORY] 늦가을 밤바다 위로 은빛 윤슬이 부서지고, 오래된 등대 불빛은 수평선 너머의 항해자들에게 조용히 길을 안내하고 있었다.',
+                    '[WARN] 2026-11-24 20:45:13.118 [cache-sync] 응답 지연 감지(42ms): 가상 스크롤 뷰포트 버퍼링을 통해 60fps 프레임을 방어합니다.',
+                    '[DATA] 사용자_ID=KR_904821 | 등급=VIP | 최근접속=경기도 화성시 | 누적조회수=1,284,920회 | 인코딩=UTF-8 검증 통과.',
+                    '[ERROR] 2026-11-24 20:45:14.892 [gateway-kr] 일시적 패킷 재전송 발생 (코드: E_TIMEOUT_RETRY) - 자동 복구 시퀀스가 실행되었습니다.'
+                ];
+
+                const chunks = new Array(targetLines);
+                for (let i = 0; i < targetLines; i++) {
+                    const lineNo = String(i + 1).padStart(6, '0');
+                    chunks[i] = `L${lineNo} | ${templates[i % templates.length]}`;
+                }
+
+                const blob = new Blob([chunks.join('\n')], { type: 'text/plain;charset=utf-8' });
+                state.fileBlob = blob;
+                state.fileName = 'benchmark_sample_16MB.txt';
+                state.fileSize = blob.size;
+                state.encoding = 'utf-8';
+
+                els.encodingBtns.forEach(b => {
+                    b.classList.toggle('active', b.dataset.encoding === 'utf-8');
+                });
+
+                decodeAndIndexBlob(true, true);
+            }, 30);
+        });
+    }
+
+    /* ========================================================================
+       가상 스크롤 메트릭 계산 (한글/CJK 전각 가중치 반영 및 높이 클램핑)
+       ======================================================================== */
+    function measureLineVisualEm(idx, isMono) {
+        const start = state.lineStarts[idx];
+        const end = state.lineEnds[idx];
+        if (end <= start) return 0;
+
+        const text = state.rawText;
+        let em = 0;
+        for (let i = start; i < end; i++) {
+            const code = text.charCodeAt(i);
+            if (code === 9) { // \t
+                em += isMono ? 2.4 : 1.6;
+            } else if (code === 32) { // space
+                em += isMono ? 0.6 : 0.3;
+            } else if (code < 128) { // ASCII
+                if (isMono) {
+                    em += 0.6;
+                } else if (code >= 65 && code <= 90) {
+                    em += 0.7;
+                } else {
+                    em += 0.56;
+                }
+            } else if (code >= 0x1100) { // 한글, 한자, 전각 기호, 이모지
+                em += isMono ? 1.05 : 1.0;
+            } else {
+                em += isMono ? 0.6 : 0.65;
+            }
+        }
+        return em;
+    }
+
+    function recalculateMetrics() {
+        if (state.totalLines === 0) return;
+
+        state.baseRowHeight = Math.max(18, Math.round(state.fontSize * state.lineHeightRatio));
+        els.vsViewport.style.setProperty('--vs-row-h', `${state.baseRowHeight}px`);
+
+        if (!state.wordWrap) {
+            state.prefixHeights = null;
+            state.logicalTotalHeight = state.totalLines * state.baseRowHeight;
+        } else {
+            const gutterSpace = getGutterWidth() + 12; // gutter min-width + margin-right
+            const rowChrome = 28; // 좌우 패딩 + 보더
+            const rawTextWidth = els.vsViewport.clientWidth - gutterSpace - rowChrome;
+            // 단어 경계 줄바꿈 오차를 고려한 보수적 유효 너비
+            const effectiveWidthPx = Math.max(120, rawTextWidth - state.fontSize * 0.8);
+            const isMono = state.fontFamily === 'mono';
+
+            const prefix = new Float64Array(state.totalLines + 1);
+            let acc = 0;
+            for (let i = 0; i < state.totalLines; i++) {
+                const visualEm = measureLineVisualEm(i, isMono);
+                const wrappedLines = visualEm === 0
+                    ? 1
+                    : Math.max(1, Math.ceil((visualEm * state.fontSize) / effectiveWidthPx));
+                acc += wrappedLines * state.baseRowHeight;
+                prefix[i + 1] = acc;
+            }
+            state.prefixHeights = prefix;
+            // 하단 여유 패딩을 더해 OS별 폰트 메트릭 미세 차이로 인한 끝줄 잘림 방지
+            state.logicalTotalHeight = acc + state.baseRowHeight * 2;
+        }
+
+        if (state.logicalTotalHeight > MAX_SCROLL_HEIGHT) {
+            state.virtualScrollHeight = MAX_SCROLL_HEIGHT;
+            state.scaleFactor = state.logicalTotalHeight / MAX_SCROLL_HEIGHT;
+        } else {
+            state.virtualScrollHeight = state.logicalTotalHeight;
+            state.scaleFactor = 1;
+        }
+
+        els.vsSpacer.style.height = `${state.virtualScrollHeight}px`;
+    }
+
+    function getLogicalScrollTop() {
+        const rawScrollTop = els.vsViewport.scrollTop;
+        if (state.scaleFactor === 1) return rawScrollTop;
+
+        const maxDomScroll = Math.max(1, state.virtualScrollHeight - els.vsViewport.clientHeight);
+        const maxLogicalScroll = Math.max(0, state.logicalTotalHeight - els.vsViewport.clientHeight);
+        const ratio = Math.min(1, Math.max(0, rawScrollTop / maxDomScroll));
+        return ratio * maxLogicalScroll;
+    }
+
+    function getLineTopY(lineIndex) {
+        if (lineIndex <= 0) return 0;
+        if (!state.wordWrap || !state.prefixHeights) {
+            return lineIndex * state.baseRowHeight;
+        }
+        return state.prefixHeights[Math.min(lineIndex, state.totalLines)];
+    }
+
+    function findLineIndexAtY(logicalY) {
+        if (state.totalLines === 0) return 0;
+        if (!state.wordWrap || !state.prefixHeights) {
+            return Math.min(state.totalLines - 1, Math.max(0, Math.floor(logicalY / state.baseRowHeight)));
+        }
+        let low = 0;
+        let high = state.totalLines - 1;
+        while (low <= high) {
+            const mid = (low + high) >>> 1;
+            const top = state.prefixHeights[mid];
+            const bottom = state.prefixHeights[mid + 1];
+            if (logicalY < top) {
+                high = mid - 1;
+            } else if (logicalY >= bottom) {
+                low = mid + 1;
+            } else {
+                return mid;
+            }
+        }
+        return Math.min(state.totalLines - 1, Math.max(0, low));
+    }
+
+    /* ========================================================================
+       가상 스크롤 뷰포트 렌더링 (rAF 60fps 최적화 + 북마크 거터 통합)
+       ======================================================================== */
+    function renderVisibleRows() {
+        if (state.totalLines === 0) return;
+
+        const viewportHeight = els.vsViewport.clientHeight || 600;
+        const domScrollTop = els.vsViewport.scrollTop;
+        const logicalScrollTop = getLogicalScrollTop();
+
+        const firstVisibleIdx = findLineIndexAtY(logicalScrollTop);
+        const lastVisibleIdx = findLineIndexAtY(logicalScrollTop + viewportHeight);
+
+        const startIdx = Math.max(0, firstVisibleIdx - OVERSCAN_LINES);
+        const endIdx = Math.min(state.totalLines - 1, lastVisibleIdx + OVERSCAN_LINES);
+
+        const startLogicalY = getLineTopY(startIdx);
+        const offsetFromViewportTop = startLogicalY - logicalScrollTop;
+        const domTranslateY = domScrollTop + offsetFromViewportTop;
+
+        els.vsContent.style.transform = `translate3d(0, ${domTranslateY}px, 0)`;
+
+        if (startIdx === state.lastRenderedStart && endIdx === state.lastRenderedEnd) {
+            return;
+        }
+        state.lastRenderedStart = startIdx;
+        state.lastRenderedEnd = endIdx;
+
+        const gutterMinWidth = getGutterWidth();
+        const trimmedQuery = state.searchQuery.trim();
+        const hasQuery = trimmedQuery.length > 0;
+        const activeMatchLineIdx = (hasQuery && state.currentMatchCursor >= 0 && state.currentMatchCursor < state.matchLineIndices.length)
+            ? state.matchLineIndices[state.currentMatchCursor]
+            : -1;
+
+        let searchRegex = null;
+        if (hasQuery) {
+            try {
+                searchRegex = new RegExp(`(${escapeRegExp(trimmedQuery)})`, state.caseSensitive ? 'g' : 'gi');
+            } catch (e) {
+                searchRegex = null;
+            }
+        }
+
+        const fragment = document.createDocumentFragment();
+        const rowStyleHeight = !state.wordWrap
+            ? `height:${state.baseRowHeight}px; line-height:${state.baseRowHeight}px;`
+            : `min-height:${state.baseRowHeight}px; line-height:${state.baseRowHeight}px;`;
+
+        for (let i = startIdx; i <= endIdx; i++) {
+            const lineNum = i + 1;
+            const isBookmarked = state.bookmarks.has(lineNum);
+
+            const row = document.createElement('div');
+            row.className = 'vs-row';
+            row.dataset.line = String(lineNum);
+            if (isBookmarked) row.classList.add('is-bookmarked');
+            row.style.cssText = rowStyleHeight;
+
+            // 거터 (북마크 아이콘 + 줄 번호)
+            const gutter = document.createElement('span');
+            gutter.className = 'vs-gutter';
+            gutter.dataset.line = String(lineNum);
+            gutter.title = isBookmarked ? `${lineNum}줄 북마크 해제` : `${lineNum}줄 북마크 추가`;
+            gutter.style.minWidth = `${gutterMinWidth}px`;
+
+            const ribbonSvg = isBookmarked
+                ? `<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>`
+                : `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>`;
+
+            if (state.showLineNumbers) {
+                gutter.innerHTML = `<span class="bm-ribbon-icon">${ribbonSvg}</span><span class="vs-line-num-text">${lineNum}</span>`;
+            } else {
+                gutter.innerHTML = `<span class="bm-ribbon-icon">${ribbonSvg}</span>`;
+            }
+            row.appendChild(gutter);
+
+            // 본문 텍스트 (가시 영역 내 매칭 줄만 <mark> 하이라이트)
+            const textSpan = document.createElement('span');
+            textSpan.className = 'vs-line-text';
+            const rawLine = getLineText(i);
+
+            if (searchRegex && rawLine.length > 0) {
+                searchRegex.lastIndex = 0;
+                if (searchRegex.test(rawLine)) {
+                    searchRegex.lastIndex = 0;
+                    const isCurrentRow = (i === activeMatchLineIdx);
+                    const parts = rawLine.split(searchRegex);
+                    let html = '';
+                    for (let p = 0; p < parts.length; p++) {
+                        if (p % 2 === 1) {
+                            html += `<mark class="hl${isCurrentRow ? ' active' : ''}">${escapeHtml(parts[p])}</mark>`;
+                        } else {
+                            html += escapeHtml(parts[p]);
+                        }
+                    }
+                    textSpan.innerHTML = html;
+                } else {
+                    textSpan.textContent = rawLine.length === 0 ? ' ' : rawLine;
+                }
+            } else {
+                textSpan.textContent = rawLine.length === 0 ? ' ' : rawLine;
+            }
+
+            row.appendChild(textSpan);
+            fragment.appendChild(row);
+        }
+
+        els.vsContent.innerHTML = '';
+        els.vsContent.appendChild(fragment);
+    }
+
+    function updateScrollStatus() {
+        if (state.totalLines === 0) return;
+
+        const logicalTop = getLogicalScrollTop();
+        const currentLineIdx = findLineIndexAtY(logicalTop);
+        const currentLineNum = currentLineIdx + 1;
+
+        const maxLogicalScroll = Math.max(0, state.logicalTotalHeight - els.vsViewport.clientHeight);
+        const pct = maxLogicalScroll <= 0
+            ? 100
+            : Math.min(100, Math.max(0, (logicalTop / maxLogicalScroll) * 100));
+
+        els.statCurrentLine.textContent = currentLineNum.toLocaleString();
+        els.progressFill.style.width = `${pct.toFixed(1)}%`;
+        els.statProgress.textContent = `${pct.toFixed(1)}%`;
+
+        if (els.vsViewport.scrollTop > 300) {
+            els.scrollTopBtn.classList.remove('hidden');
+        } else {
+            els.scrollTopBtn.classList.add('hidden');
+        }
+    }
+
+    function scrollToLine(lineIndex, centerInView = true) {
+        if (state.totalLines === 0) return;
+        const clampedIdx = Math.min(state.totalLines - 1, Math.max(0, lineIndex));
+
+        let targetLogicalY = getLineTopY(clampedIdx);
+        if (centerInView) {
+            targetLogicalY = Math.max(0, targetLogicalY - els.vsViewport.clientHeight * 0.35);
+        }
+
+        const maxLogicalScroll = Math.max(0, state.logicalTotalHeight - els.vsViewport.clientHeight);
+        targetLogicalY = Math.min(maxLogicalScroll, targetLogicalY);
+
+        if (state.scaleFactor === 1) {
+            els.vsViewport.scrollTop = targetLogicalY;
+        } else {
+            const maxDomScroll = Math.max(1, state.virtualScrollHeight - els.vsViewport.clientHeight);
+            const ratio = maxLogicalScroll > 0 ? (targetLogicalY / maxLogicalScroll) : 0;
+            els.vsViewport.scrollTop = ratio * maxDomScroll;
+        }
+
+        state.lastRenderedStart = -1;
+        renderVisibleRows();
+        updateScrollStatus();
+        scheduleSavePosition();
+    }
+
+    /* ========================================================================
+       대용량 비동기 블록 고속 검색 엔진 (저메모리 + 메인 스레드 논블로킹)
+       ======================================================================== */
+    async function executeSearch(jumpToFirst = true) {
+        const token = ++state.searchToken;
+        const query = state.searchQuery.trim();
+        state.matchLineIndices = [];
+        state.currentMatchCursor = -1;
+
+        if (!query || state.totalLines === 0) {
+            updateSearchUI();
+            state.lastRenderedStart = -1;
+            renderVisibleRows();
+            return;
+        }
+
+        els.searchCount.textContent = '검색중…';
+        els.prevMatchBtn.disabled = true;
+        els.nextMatchBtn.disabled = true;
+
+        const needle = state.caseSensitive ? query : query.toLowerCase();
+        const matches = [];
+        const totalLines = state.totalLines;
+        let blockStartLine = 0;
+        let frameStart = performance.now();
+
+        while (blockStartLine < totalLines) {
+            const baseOffset = state.lineStarts[blockStartLine];
+            let blockEndLine = blockStartLine;
+
+            while (
+                blockEndLine + 1 < totalLines &&
+                (state.lineEnds[blockEndLine + 1] - baseOffset) < SEARCH_BLOCK_CHARS
+            ) {
+                blockEndLine++;
+            }
+
+            const endOffset = state.lineEnds[blockEndLine];
+            const rawBlock = state.rawText.slice(baseOffset, endOffset);
+            const haystack = state.caseSensitive ? rawBlock : rawBlock.toLowerCase();
+
+            let searchPos = 0;
+            let lastLine = blockStartLine;
+
+            while (searchPos < haystack.length) {
+                const found = haystack.indexOf(needle, searchPos);
+                if (found === -1) break;
+
+                const globalPos = baseOffset + found;
+                const matchedLine = findLineIndexAtCharPos(globalPos, lastLine, blockEndLine);
+                matches.push(matchedLine);
+                lastLine = matchedLine + 1;
+
+                if (matchedLine >= blockEndLine) break;
+                searchPos = state.lineStarts[matchedLine + 1] - baseOffset;
+            }
+
+            blockStartLine = blockEndLine + 1;
+
+            if (blockStartLine < totalLines && performance.now() - frameStart > 14) {
+                await new Promise(resolve => setTimeout(resolve, 0));
+                if (token !== state.searchToken) return;
+                frameStart = performance.now();
+            }
+        }
+
+        if (token !== state.searchToken) return;
+
+        state.matchLineIndices = matches;
+
+        if (matches.length > 0) {
+            if (jumpToFirst) {
+                const currentIdx = findLineIndexAtY(getLogicalScrollTop());
+                let foundCursor = 0;
+                for (let m = 0; m < matches.length; m++) {
+                    if (matches[m] >= currentIdx) {
+                        foundCursor = m;
+                        break;
+                    }
+                }
+                state.currentMatchCursor = foundCursor;
+                scrollToLine(matches[foundCursor], true);
+            } else {
+                state.currentMatchCursor = 0;
+                state.lastRenderedStart = -1;
+                renderVisibleRows();
+            }
+        } else {
+            state.lastRenderedStart = -1;
+            renderVisibleRows();
+        }
+
+        updateSearchUI();
+    }
+
+    function navigateSearch(delta) {
+        const total = state.matchLineIndices.length;
+        if (total === 0) return;
+
+        state.currentMatchCursor = (state.currentMatchCursor + delta + total) % total;
+        const targetLineIdx = state.matchLineIndices[state.currentMatchCursor];
+        scrollToLine(targetLineIdx, true);
+        updateSearchUI();
+    }
+
+    function updateSearchUI() {
+        const total = state.matchLineIndices.length;
+        const current = total > 0 ? state.currentMatchCursor + 1 : 0;
+        els.searchCount.textContent = `${current.toLocaleString()}/${total.toLocaleString()}`;
+        els.prevMatchBtn.disabled = total === 0;
+        els.nextMatchBtn.disabled = total === 0;
+    }
+
+    /* ========================================================================
+       특정 줄 번호 이동 (Ctrl+G) 모달
+       ======================================================================== */
+    function openGotoModal() {
+        if (state.totalLines === 0) return;
+        els.gotoModalSub.textContent = `1부터 ${state.totalLines.toLocaleString()} 사이의 줄 번호를 입력하세요.`;
+        els.gotoModalInput.max = state.totalLines;
+        els.gotoModalInput.value = findLineIndexAtY(getLogicalScrollTop()) + 1;
+        els.gotoModal.classList.remove('hidden');
+        setTimeout(() => {
+            els.gotoModalInput.focus();
+            els.gotoModalInput.select();
+        }, 20);
+    }
+
+    function closeGotoModal() {
+        els.gotoModal.classList.add('hidden');
+    }
+
+    function submitGotoModal() {
+        const val = parseInt(els.gotoModalInput.value, 10);
+        if (isNaN(val) || val < 1 || val > state.totalLines) {
+            showToast(`1 ~ ${state.totalLines.toLocaleString()} 사이의 숫자를 입력하세요.`);
+            return;
+        }
+        closeGotoModal();
+        jumpToLineWithPulse(val, false);
+        showToast(`${val.toLocaleString()}번째 줄로 이동했습니다.`);
+    }
+
+    /* ========================================================================
+       이벤트 바인딩
+       ======================================================================== */
+    // 1. 가상 스크롤 이벤트 (rAF 스로틀링 + 읽은 위치 자동 저장)
+    els.vsViewport.addEventListener('scroll', () => {
+        if (!state.rafPending) {
+            state.rafPending = true;
+            requestAnimationFrame(() => {
+                renderVisibleRows();
+                updateScrollStatus();
+                state.rafPending = false;
+            });
+        }
+        scheduleSavePosition();
+    }, { passive: true });
+
+    // 탭 종료/백그라운드 전환 시 마지막 읽은 위치 즉시 저장 (Safari 대응)
+    window.addEventListener('pagehide', flushSavePosition);
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+            flushSavePosition();
+        }
+    });
+
+    // 거터(줄 번호/리본) 클릭 시 북마크 즉시 토글 (이벤트 위임)
+    els.vsContent.addEventListener('click', (e) => {
+        const gutter = e.target.closest('.vs-gutter');
+        if (!gutter) return;
+        const lineNum = parseInt(gutter.dataset.line, 10);
+        if (!isNaN(lineNum)) {
+            toggleBookmark(lineNum);
+        }
+    });
+
+    // 2. 윈도우 리사이즈 및 ResizeObserver 기반 뷰포트 크기 변화 대응
+    let resizeTimer = null;
+    function scheduleViewportReflow(widthChanged) {
+        if (state.totalLines === 0) return;
+        if (widthChanged && state.wordWrap) {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                recalculateMetrics();
+                state.lastRenderedStart = -1;
+                renderVisibleRows();
+                updateScrollStatus();
+            }, 120);
+        } else {
+            state.lastRenderedStart = -1;
+            renderVisibleRows();
+            updateScrollStatus();
+        }
+    }
+
+    window.addEventListener('resize', () => {
+        syncResponsiveLayout();
+        scheduleViewportReflow(true);
+    });
+
+    if (typeof ResizeObserver !== 'undefined') {
+        let lastVpW = 0;
+        let lastVpH = 0;
+        const vpObserver = new ResizeObserver((entries) => {
+            const rect = entries[0].contentRect;
+            const w = Math.round(rect.width);
+            const h = Math.round(rect.height);
+            if (w === 0 || h === 0) return;
+            const widthChanged = w !== lastVpW;
+            const heightChanged = h !== lastVpH;
+            lastVpW = w;
+            lastVpH = h;
+            if (widthChanged || heightChanged) {
+                scheduleViewportReflow(widthChanged);
+            }
+        });
+        vpObserver.observe(els.vsViewport);
+    }
+
+    // 3. 파일 열기 & 샘플 생성
+    els.openFileBtn.addEventListener('click', () => els.fileInput.click());
+    els.emptyOpenBtn.addEventListener('click', () => els.fileInput.click());
+
+    els.fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) handleFileSelect(file);
+        e.target.value = '';
+    });
+
+    els.emptySmallSampleBtn.addEventListener('click', generateMiniSample);
+    els.genSampleBtn.addEventListener('click', generateLargeSample);
+    els.mobileGenSampleBtn.addEventListener('click', generateLargeSample);
+    els.emptySampleBtn.addEventListener('click', generateLargeSample);
+
+    // 4. 드래그 앤 드롭
+    let dragCounter = 0;
+
+    els.dropZone.addEventListener('dragenter', (e) => {
+        e.preventDefault();
+        dragCounter++;
+        els.dragOverlay.classList.remove('hidden');
+    });
+
+    els.dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+    });
+
+    els.dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dragCounter--;
+        if (dragCounter <= 0) {
+            dragCounter = 0;
+            els.dragOverlay.classList.add('hidden');
+        }
+    });
+
+    els.dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dragCounter = 0;
+        els.dragOverlay.classList.add('hidden');
+        const file = e.dataTransfer.files[0];
+        if (file) handleFileSelect(file);
+    });
+
+    // 5. 인코딩 전환 (UTF-8 / EUC-KR) + 설정 자동 저장
+    els.encodingBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const enc = btn.dataset.encoding;
+            if (state.encoding === enc) return;
+
+            state.encoding = enc;
+            els.encodingBtns.forEach(b => b.classList.toggle('active', b.dataset.encoding === enc));
+            els.statEncoding.textContent = enc.toUpperCase();
+            saveUserPreferences();
+
+            if (state.fileBlob) {
+                decodeAndIndexBlob(false, false);
+            } else {
+                showToast(`인코딩 설정: ${enc.toUpperCase()}`);
+            }
+        });
+    });
+
+    // 6. 검색 입력 디바운스(250ms) 및 모바일 검색 바 토글
+    els.toggleMobileSearchBtn.addEventListener('click', () => {
+        const willOpen = els.mobileSearchBar.classList.contains('hidden');
+        els.mobileSearchBar.classList.toggle('hidden', !willOpen);
+        els.toggleMobileSearchBtn.classList.toggle('active', willOpen);
+        if (willOpen) {
+            els.searchInput.focus();
+        }
+    });
+
+    let searchDebounce = null;
+    els.searchInput.addEventListener('input', (e) => {
+        clearTimeout(searchDebounce);
+        searchDebounce = setTimeout(() => {
+            state.searchQuery = e.target.value;
+            executeSearch(true);
+        }, 250);
+    });
+
+    els.searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            clearTimeout(searchDebounce);
+            if (state.searchQuery !== els.searchInput.value) {
+                state.searchQuery = els.searchInput.value;
+                executeSearch(true);
+            } else {
+                navigateSearch(e.shiftKey ? -1 : 1);
+            }
+        }
+    });
+
+    els.caseSensitiveBtn.addEventListener('click', () => {
+        state.caseSensitive = !state.caseSensitive;
+        els.caseSensitiveBtn.classList.toggle('active', state.caseSensitive);
+        saveUserPreferences();
+        if (state.searchQuery.trim().length > 0) {
+            executeSearch(false);
+        }
+    });
+
+    els.prevMatchBtn.addEventListener('click', () => navigateSearch(-1));
+    els.nextMatchBtn.addEventListener('click', () => navigateSearch(1));
+
+    // 7. 북마크 액션 및 사이드 패널 / 모바일 바텀 시트 제어
+    function handleQuickBookmarkAction() {
+        if (state.totalLines === 0) return;
+        const topLine = findLineIndexAtY(getLogicalScrollTop()) + 1;
+        toggleBookmark(topLine);
+    }
+    els.quickBookmarkBtn.addEventListener('click', handleQuickBookmarkAction);
+    els.mobileQuickBookmarkBtn.addEventListener('click', handleQuickBookmarkAction);
+
+    function toggleBookmarkDrawer(forceOpen = null) {
+        const isCurrentlyHidden = els.bookmarkDrawer.classList.contains('hidden');
+        const shouldOpen = forceOpen !== null ? forceOpen : isCurrentlyHidden;
+        const isMobile = window.innerWidth <= 768;
+
+        els.bookmarkDrawer.classList.toggle('hidden', !shouldOpen);
+        els.toggleBookmarkDrawerBtn.classList.toggle('active', shouldOpen);
+        els.drawerBackdrop.classList.toggle('hidden', !(shouldOpen && isMobile));
+    }
+
+    els.toggleBookmarkDrawerBtn.addEventListener('click', () => toggleBookmarkDrawer());
+    els.closeBookmarkDrawerBtn.addEventListener('click', () => toggleBookmarkDrawer(false));
+    els.drawerBackdrop.addEventListener('click', () => toggleBookmarkDrawer(false));
+
+    els.prevBookmarkBtn.addEventListener('click', () => navigateBookmark(-1));
+    els.nextBookmarkBtn.addEventListener('click', () => navigateBookmark(1));
+
+    // 북마크 전체 삭제 (2단계 인라인 확인)
+    els.clearAllBookmarksBtn.addEventListener('click', () => {
+        if (state.bookmarks.size === 0) return;
+
+        if (!state.clearConfirmTimer) {
+            els.clearAllBookmarksBtn.textContent = '정말 모두 삭제할까요?';
+            els.clearAllBookmarksBtn.className = 'btn btn-danger-confirm';
+            state.clearConfirmTimer = setTimeout(() => {
+                resetClearConfirmButton();
+            }, 3500);
+        } else {
+            resetClearConfirmButton();
+            state.bookmarks.clear();
+            state.activeBookmarkLine = null;
+            saveFileMetadata();
+            renderBookmarkDrawer();
+            state.lastRenderedStart = -1;
+            renderVisibleRows();
+            showToast('모든 북마크가 삭제되었습니다.');
+        }
+    });
+
+    // 8. 마지막 읽은 위치 복원 배너 버튼
+    els.resumeJumpBtn.addEventListener('click', () => {
+        if (state.pendingResumeLine) {
+            const target = state.pendingResumeLine;
+            state.pendingResumeLine = null;
+            els.resumeBanner.classList.add('hidden');
+            jumpToLineWithPulse(target, false);
+            showToast(`${target.toLocaleString()}번째 줄로 이동했습니다.`);
+        }
+    });
+
+    els.resumeDismissBtn.addEventListener('click', () => {
+        state.pendingResumeLine = null;
+        els.resumeBanner.classList.add('hidden');
+    });
+
+    // 9. 줄 이동 (Ctrl+G) 모달
+    els.openGotoModalBtn.addEventListener('click', openGotoModal);
+    els.gotoModalCancelBtn.addEventListener('click', closeGotoModal);
+    els.gotoModalConfirmBtn.addEventListener('click', submitGotoModal);
+    els.gotoModal.addEventListener('click', (e) => {
+        if (e.target === els.gotoModal) closeGotoModal();
+    });
+    els.gotoModalInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            submitGotoModal();
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            closeGotoModal();
+        }
+    });
+
+    // 10. 전체 복사 (Clipboard API 우선 + iOS 호환 fallback + 대용량 보호)
+    async function handleCopyAllText() {
+        if (!state.rawText) {
+            showToast('복사할 텍스트가 없습니다.');
+            return;
+        }
+        if (state.fileSize > MAX_COPY_BYTES) {
+            showToast('10MB 초과 대용량 파일은 브라우저 멈춤 방지를 위해 전체 복사가 제한됩니다.');
+            return;
+        }
+
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+            try {
+                await navigator.clipboard.writeText(state.rawText);
+                showToast('전체 텍스트가 클립보드에 복사되었습니다.');
+                return;
+            } catch (err) {
+                // 비보안 컨텍스트 등에서는 아래 fallback으로 진행
+            }
+        }
+
+        const ta = document.createElement('textarea');
+        ta.value = state.rawText;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.top = '-9999px';
+        ta.style.left = '-9999px';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+
+        try {
+            ta.focus({ preventScroll: true });
+            ta.setSelectionRange(0, ta.value.length);
+            const ok = document.execCommand('copy');
+            showToast(ok ? '전체 텍스트가 클립보드에 복사되었습니다.' : '복사에 실패했습니다.');
+        } catch (err) {
+            showToast('복사 중 오류가 발생했습니다.');
+        } finally {
+            ta.blur();
+            document.body.removeChild(ta);
+        }
+    }
+    els.copyAllBtn.addEventListener('click', handleCopyAllText);
+    els.mobileCopyAllBtn.addEventListener('click', handleCopyAllText);
+
+    // 11. 보기 설정 토글 & 테마 / 글꼴 / 크기(12~32px) / 줄간격 / 줄번호 / 줄바꿈 (변경 즉시 저장)
+    els.toggleSettingsBtn.addEventListener('click', () => {
+        els.settingsBar.classList.toggle('hidden');
+    });
+
+    els.themeBtns.forEach(btn => {
+        btn.addEventListener('click', () => applyTheme(btn.dataset.theme, true));
+    });
+
+    els.fontBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const font = btn.dataset.font;
+            state.fontFamily = font;
+            els.vsViewport.classList.remove('font-sans', 'font-serif', 'font-mono');
+            els.vsViewport.classList.add(`font-${font}`);
+            els.fontBtns.forEach(b => b.classList.toggle('active', b.dataset.font === font));
+            saveUserPreferences();
+
+            if (state.totalLines > 0) {
+                recalculateMetrics();
+                state.lastRenderedStart = -1;
+                renderVisibleRows();
+            }
+        });
+    });
+
+    function updateFontSize(newSize) {
+        state.fontSize = Math.min(32, Math.max(12, newSize));
+        els.vsViewport.style.fontSize = `${state.fontSize}px`;
+        els.fontResetBtn.textContent = `${state.fontSize}px`;
+        saveUserPreferences();
+
+        if (state.totalLines > 0) {
+            recalculateMetrics();
+            state.lastRenderedStart = -1;
+            renderVisibleRows();
+            updateScrollStatus();
+        }
+    }
+
+    els.fontDecBtn.addEventListener('click', () => updateFontSize(state.fontSize - 1));
+    els.fontIncBtn.addEventListener('click', () => updateFontSize(state.fontSize + 1));
+    els.fontResetBtn.addEventListener('click', () => updateFontSize(15));
+
+    els.leadingBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const leading = parseFloat(btn.dataset.leading);
+            state.lineHeightRatio = leading;
+            els.leadingBtns.forEach(b => b.classList.toggle('active', parseFloat(b.dataset.leading) === leading));
+            saveUserPreferences();
+
+            if (state.totalLines > 0) {
+                recalculateMetrics();
+                state.lastRenderedStart = -1;
+                renderVisibleRows();
+                updateScrollStatus();
+            }
+        });
+    });
+
+    els.toggleLineNumBtn.addEventListener('click', () => {
+        state.showLineNumbers = !state.showLineNumbers;
+        els.toggleLineNumBtn.classList.toggle('active', state.showLineNumbers);
+        saveUserPreferences();
+
+        if (state.totalLines > 0) {
+            if (state.wordWrap) recalculateMetrics();
+            state.lastRenderedStart = -1;
+            renderVisibleRows();
+        }
+    });
+
+    els.toggleWrapBtn.addEventListener('click', () => {
+        state.wordWrap = !state.wordWrap;
+        els.toggleWrapBtn.classList.toggle('active', state.wordWrap);
+        els.vsViewport.classList.toggle('mode-wrap', state.wordWrap);
+        els.vsViewport.classList.toggle('mode-nowrap', !state.wordWrap);
+        saveUserPreferences();
+
+        if (state.totalLines > 0) {
+            const currentIdx = findLineIndexAtY(getLogicalScrollTop());
+            recalculateMetrics();
+            scrollToLine(currentIdx, false);
+        }
+    });
+
+    // 12. 맨 위로 이동 & 전역 단축키 (Ctrl+F, Ctrl+G, Ctrl+B, F2, Shift+F2)
+    els.scrollTopBtn.addEventListener('click', () => {
+        els.vsViewport.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    window.addEventListener('keydown', (e) => {
+        const isMod = e.ctrlKey || e.metaKey;
+
+        if (isMod && e.key.toLowerCase() === 'f') {
+            e.preventDefault();
+            if (window.innerWidth <= 768) {
+                els.mobileSearchBar.classList.remove('hidden');
+                els.toggleMobileSearchBtn.classList.add('active');
+            }
+            els.searchInput.focus();
+            els.searchInput.select();
+        } else if (isMod && e.key.toLowerCase() === 'g') {
+            e.preventDefault();
+            openGotoModal();
+        } else if (isMod && e.key.toLowerCase() === 'b') {
+            e.preventDefault();
+            handleQuickBookmarkAction();
+        } else if (e.key === 'F2') {
+            e.preventDefault();
+            navigateBookmark(e.shiftKey ? -1 : 1);
+        } else if (e.key === 'Escape' && !els.gotoModal.classList.contains('hidden')) {
+            e.preventDefault();
+            closeGotoModal();
+        }
+    });
+
+    // 초기 실행: 저장된 보기 설정 복원 및 북마크 패널 빈 상태 렌더링
+    loadUserPreferences();
+    renderBookmarkDrawer();
+})();
+</script>
+</body>
+</html>
