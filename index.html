@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html lang="ko" data-theme="light">
+<html lang="ko" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="Text Viewer">
-    <meta name="apple-mobile-web-app-status-bar-style" id="appleStatusBarMeta" content="default">
-    <meta name="theme-color" id="themeColorMeta" content="#f8fafc">
+    <meta name="apple-mobile-web-app-status-bar-style" id="appleStatusBarMeta" content="black">
+    <meta name="theme-color" id="themeColorMeta" content="#000000">
     <link rel="apple-touch-icon" id="appleTouchIcon" sizes="180x180" href="">
     <link rel="icon" id="appFavicon" type="image/png" sizes="180x180" href="">
     <title>Text Viewer</title>
@@ -20,7 +20,7 @@
     <!-- 최초 로드 시 저장된 테마 즉시 적용(FOUC 방지) + iOS 홈 화면용 180x180 PNG 아이콘 생성 -->
     <script>
         (function () {
-            // 1. 저장된 테마 복원
+            // 1. 저장된 테마 복원 (기본값: dark)
             try {
                 var raw = localStorage.getItem('tv_v2_prefs');
                 if (raw) {
@@ -156,6 +156,7 @@
             --mark-active-bg: #f97316;
             --mark-active-text: #ffffff;
             --row-hover: rgba(15, 23, 42, 0.03);
+            --page-shadow: rgba(15, 23, 42, 0.14);
             --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
             --shadow-md: 0 6px 20px rgba(15, 23, 42, 0.12);
             --shadow-lg: 0 16px 36px rgba(15, 23, 42, 0.22);
@@ -186,6 +187,7 @@
             --mark-active-bg: #c2410c;
             --mark-active-text: #ffffff;
             --row-hover: rgba(59, 47, 35, 0.04);
+            --page-shadow: rgba(59, 47, 35, 0.18);
             --shadow-sm: 0 1px 2px rgba(59, 47, 35, 0.08);
             --shadow-md: 0 6px 20px rgba(59, 47, 35, 0.14);
             --shadow-lg: 0 16px 36px rgba(59, 47, 35, 0.24);
@@ -216,6 +218,7 @@
             --mark-active-bg: #ea580c;
             --mark-active-text: #ffffff;
             --row-hover: rgba(255, 255, 255, 0.04);
+            --page-shadow: rgba(255, 255, 255, 0.08);
             --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.65);
             --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.85);
             --shadow-lg: 0 18px 42px rgba(0, 0, 0, 0.92);
@@ -259,7 +262,7 @@
             background-color: var(--bg-app);
             color: var(--text-primary);
             --pad-v: 12px;
-            --pad-h: 16px;
+            --pad-h: 24px;
         }
 
         .hidden {
@@ -436,6 +439,7 @@
             align-items: center;
             justify-content: center;
             gap: 5px;
+            white-space: nowrap;
         }
 
         .segment-btn:hover {
@@ -549,7 +553,7 @@
             z-index: 30;
             user-select: none;
             -webkit-user-select: none;
-            max-height: 52vh;
+            max-height: 58vh;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
             flex-shrink: 0;
@@ -635,7 +639,7 @@
         }
 
         /* =========================================================
-           5. 메인 작업 공간 (가상 스크롤 뷰포트 + 북마크 패널)
+           5. 메인 작업 공간 (가상 스크롤 / 책 넘김 뷰포트 + 북마크 패널)
            ========================================================= */
         .workspace {
             flex: 1;
@@ -782,19 +786,33 @@
         }
 
         /* =========================================================
-           가상 스크롤 뷰포트 (iOS Safari 관성 스크롤 & 안전 영역 대응)
+           가상 스크롤 프레임 & 뷰포트 (상하 여백 + 줄 높이 정수 배 정렬로 끝부분 잘림 방지)
            ========================================================= */
-        .vs-viewport {
+        .vs-frame {
             flex: 1;
             width: 100%;
+            min-height: 0;
+            padding-top: var(--pad-v, 12px);
+            padding-bottom: var(--pad-v, 12px);
+            background-color: var(--bg-surface);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .vs-viewport {
+            width: 100%;
             height: 100%;
+            max-height: 100%;
+            flex: 0 0 auto;
             overflow-y: auto;
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
             overscroll-behavior: contain;
             position: relative;
             background-color: var(--bg-surface);
-            --vs-row-h: 26px;
+            --vs-row-h: 40px;
         }
 
         .vs-spacer {
@@ -823,8 +841,8 @@
             width: 100%;
             padding-top: 0;
             padding-bottom: 0;
-            padding-left: calc(var(--pad-h, 16px) + env(safe-area-inset-left));
-            padding-right: calc(var(--pad-h, 16px) + env(safe-area-inset-right));
+            padding-left: calc(var(--pad-h, 24px) + env(safe-area-inset-left));
+            padding-right: calc(var(--pad-h, 24px) + env(safe-area-inset-right));
         }
 
         @media (hover: hover) and (pointer: fine) {
@@ -860,6 +878,10 @@
             touch-action: manipulation;
         }
 
+        .vs-gutter.is-continuation {
+            cursor: default;
+        }
+
         .vs-row.is-bookmarked .vs-gutter {
             color: var(--bookmark-color);
             font-weight: 700;
@@ -870,7 +892,7 @@
             align-items: center;
             justify-content: center;
             width: 14px;
-            height: var(--vs-row-h, 26px);
+            height: var(--vs-row-h, 40px);
             opacity: 0.28;
             transition: opacity 0.15s;
         }
@@ -882,7 +904,7 @@
 
         .vs-line-num-text {
             text-align: right;
-            line-height: var(--vs-row-h, 26px);
+            line-height: var(--vs-row-h, 40px);
         }
 
         .vs-line-text {
@@ -904,16 +926,236 @@
             overflow: visible;
         }
 
-        .mode-wrap .vs-row {
+        .mode-wrap .vs-row,
+        .page-viewport .vs-row {
             white-space: pre-wrap;
             word-break: break-word;
             overflow-wrap: anywhere;
         }
 
-        .mode-wrap .vs-line-text {
+        .mode-wrap .vs-line-text,
+        .page-viewport .vs-line-text {
             white-space: pre-wrap;
             word-break: break-word;
             overflow-wrap: anywhere;
+        }
+
+        /* =========================================================
+           책 넘김(페이지) 뷰포트 & 전환 애니메이션
+           ========================================================= */
+        .page-viewport {
+            flex: 1;
+            width: 100%;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+            background-color: var(--bg-surface);
+            --vs-row-h: 40px;
+            touch-action: pan-y;
+        }
+
+        .page-stage {
+            flex: 1;
+            min-height: 0;
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+            cursor: default;
+        }
+
+        .page-content {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            padding-top: var(--pad-v, 12px);
+            padding-bottom: var(--pad-v, 12px);
+            overflow: hidden;
+            will-change: transform, opacity;
+            background-color: var(--bg-surface);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .page-inner {
+            width: 100%;
+            flex: 0 0 auto;
+            overflow: hidden;
+        }
+
+        .page-content.turn-next {
+            animation: pageTurnNext 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .page-content.turn-prev {
+            animation: pageTurnPrev 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        @keyframes pageTurnNext {
+            0% {
+                opacity: 0.45;
+                transform: translate3d(34px, 0, 0);
+                box-shadow: -14px 0 28px var(--page-shadow);
+            }
+            100% {
+                opacity: 1;
+                transform: translate3d(0, 0, 0);
+                box-shadow: 0 0 0 transparent;
+            }
+        }
+
+        @keyframes pageTurnPrev {
+            0% {
+                opacity: 0.45;
+                transform: translate3d(-34px, 0, 0);
+                box-shadow: 14px 0 28px var(--page-shadow);
+            }
+            100% {
+                opacity: 1;
+                transform: translate3d(0, 0, 0);
+                box-shadow: 0 0 0 transparent;
+            }
+        }
+
+        /* 오프스크린 정밀 높이 측정용 박스 (렌더링과 100% 동일 스타일) */
+        .page-measure-box {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            visibility: hidden;
+            pointer-events: none;
+            z-index: -1;
+            padding: 0;
+            margin: 0;
+        }
+
+        /* 좌우 플로팅 페이지 넘김 화살표 (데스크톱 호버 시 강조) */
+        .page-nav-edge {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 64px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-surface);
+            color: var(--text-secondary);
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 20;
+            opacity: 0.22;
+            transition: opacity 0.16s ease, background-color 0.15s ease, transform 0.12s ease;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        .page-nav-prev {
+            left: calc(10px + env(safe-area-inset-left));
+        }
+
+        .page-nav-next {
+            right: calc(10px + env(safe-area-inset-right));
+        }
+
+        .page-nav-edge:hover:not(:disabled) {
+            opacity: 0.96;
+            background-color: var(--bg-subtle);
+            color: var(--text-primary);
+        }
+
+        .page-nav-edge:active:not(:disabled) {
+            transform: translateY(-50%) scale(0.95);
+        }
+
+        .page-nav-edge:disabled {
+            opacity: 0 !important;
+            pointer-events: none;
+        }
+
+        /* 하단 페이지 컨트롤 바 */
+        .page-footer-bar {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 6px calc(14px + env(safe-area-inset-right)) 6px calc(14px + env(safe-area-inset-left));
+            border-top: 1px solid var(--border-color);
+            background-color: var(--bg-surface);
+            user-select: none;
+            -webkit-user-select: none;
+            z-index: 22;
+        }
+
+        .page-bar-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            min-height: 32px;
+            padding: 0 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-subtle);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 12.5px;
+            font-weight: 600;
+            cursor: pointer;
+            touch-action: manipulation;
+            transition: background-color 0.15s, transform 0.1s;
+        }
+
+        .page-bar-btn:hover:not(:disabled) {
+            background-color: var(--bg-hover);
+        }
+
+        .page-bar-btn:active:not(:disabled) {
+            transform: scale(0.97);
+        }
+
+        .page-bar-btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
+        .page-indicator-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1px;
+            min-width: 0;
+        }
+
+        .page-indicator-text {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 12.5px;
+            font-weight: 700;
+            color: var(--text-primary);
+            white-space: nowrap;
+        }
+
+        .page-indicator-hint {
+            font-size: 11px;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        /* 전체화면 모드에서의 하단 페이지 바: 미니멀하게 표시 */
+        .app-shell.is-fullscreen .page-footer-bar {
+            border-top-color: transparent;
+            padding-bottom: max(8px, env(safe-area-inset-bottom));
+            opacity: 0.72;
+        }
+
+        .app-shell.is-fullscreen .page-indicator-hint {
+            display: none;
         }
 
         /* 글꼴 패밀리 클래스 */
@@ -1450,6 +1692,16 @@
                 min-width: 40px;
             }
 
+            /* 모바일에서는 좌우 플로팅 화살표 대신 탭·스와이프 + 하단 바 사용 */
+            .page-nav-edge {
+                display: none;
+            }
+
+            .page-bar-btn {
+                min-height: 36px;
+                padding: 0 14px;
+            }
+
             /* 모바일 검색 드롭다운 바 */
             .mobile-search-bar {
                 background-color: var(--bg-surface);
@@ -1596,7 +1848,7 @@
             </button>
 
             <!-- 보기 설정 토글 -->
-            <button id="toggleSettingsBtn" class="btn" title="읽기 환경 및 여백 설정 열기/닫기">
+            <button id="toggleSettingsBtn" class="btn" title="읽기 방식, 테마, 여백 설정 열기/닫기">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/>
                     <line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/>
@@ -1622,7 +1874,7 @@
     <div id="mobileSearchBar" class="mobile-search-bar hidden"></div>
 
     <!-- =========================================================
-         읽기 환경 설정 바 (테마 / 글꼴 / 크기 / 줄간격 / 여백 / 표시 옵션)
+         읽기 환경 설정 바 (읽기 방식 / 넘김 효과 / 테마 / 글꼴 / 크기 / 줄간격 / 여백 / 표시 옵션)
          ========================================================= -->
     <div id="settingsBar" class="settings-bar hidden">
         <!-- 모바일 전용 상단 행: 좌측 인코딩 / 우측 전체 복사 -->
@@ -1634,38 +1886,60 @@
             <button id="mobileCopyAllBtn" class="btn btn-sm">전체 복사</button>
         </div>
 
-        <!-- 테마 -->
+        <!-- 읽기 방식 (스크롤 / 책 넘김) + 페이지 전환 애니메이션 토글 -->
+        <div class="setting-item" style="flex-wrap: wrap;">
+            <span class="setting-label">읽기 방식</span>
+            <div class="segment-group">
+                <button class="segment-btn viewmode-btn active" data-viewmode="scroll" title="세로 가상 스크롤 읽기">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+                        <polyline points="3 6 4 7 6 5"/><polyline points="3 18 4 19 6 17"/>
+                    </svg>
+                    <span>스크롤</span>
+                </button>
+                <button class="segment-btn viewmode-btn" data-viewmode="page" title="좌우 스와이프·탭·방향키로 페이지 넘기기">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+                    </svg>
+                    <span>책 넘김</span>
+                </button>
+            </div>
+            <button id="togglePageAnimBtn" class="btn btn-toggle active" title="책 넘김 모드에서 페이지 전환 애니메이션 켜기/끄기">넘김 효과</button>
+        </div>
+
+        <!-- 테마 (기본값: 다크) -->
         <div class="setting-item">
             <span class="setting-label">테마</span>
             <div class="segment-group">
-                <button class="segment-btn theme-btn active" data-theme="light">
+                <button class="segment-btn theme-btn" data-theme="light">
                     <span class="theme-dot" style="background:#ffffff;"></span>라이트
                 </button>
                 <button class="segment-btn theme-btn" data-theme="sepia">
                     <span class="theme-dot" style="background:#efe6d0;"></span>세피아
                 </button>
-                <button class="segment-btn theme-btn" data-theme="dark">
+                <button class="segment-btn theme-btn active" data-theme="dark">
                     <span class="theme-dot" style="background:#000000;"></span>다크
                 </button>
             </div>
         </div>
 
-        <!-- 글꼴 -->
+        <!-- 글꼴 (기본값: 바탕) -->
         <div class="setting-item">
             <span class="setting-label">글꼴</span>
             <div class="segment-group">
-                <button class="segment-btn font-btn active" data-font="sans">고딕</button>
-                <button class="segment-btn font-btn" data-font="serif">바탕</button>
+                <button class="segment-btn font-btn" data-font="sans">고딕</button>
+                <button class="segment-btn font-btn active" data-font="serif">바탕</button>
                 <button class="segment-btn font-btn" data-font="mono">고정폭</button>
             </div>
         </div>
 
-        <!-- 글자 크기 (12px ~ 32px) -->
+        <!-- 글자 크기 (12px ~ 32px, 기본값: 23px) -->
         <div class="setting-item">
             <span class="setting-label">크기</span>
             <div class="segment-group">
                 <button id="fontDecBtn" class="segment-btn" title="글자 축소">-</button>
-                <button id="fontResetBtn" class="segment-btn" title="15px 초기화" style="font-family:monospace;">15px</button>
+                <button id="fontResetBtn" class="segment-btn" title="23px 초기화" style="font-family:monospace;">23px</button>
                 <button id="fontIncBtn" class="segment-btn" title="글자 확대">+</button>
             </div>
         </div>
@@ -1680,7 +1954,7 @@
             </div>
         </div>
 
-        <!-- 상하 여백 & 좌우 여백 동일 행 배치 (375px 모바일에서도 한 줄 유지) -->
+        <!-- 상하 여백 & 좌우 여백 동일 행 배치 (기본값: 상하 12px / 좌우 24px) -->
         <div class="setting-row-pair">
             <div class="setting-item">
                 <span class="setting-label">상하 여백</span>
@@ -1695,7 +1969,7 @@
                 <span class="setting-label">좌우 여백</span>
                 <div class="segment-group">
                     <button id="padHDecBtn" class="segment-btn" title="좌우 여백 줄이기">-</button>
-                    <button id="padHResetBtn" class="segment-btn pad-val-btn" title="16px 초기화">16px</button>
+                    <button id="padHResetBtn" class="segment-btn pad-val-btn" title="24px 초기화">24px</button>
                     <button id="padHIncBtn" class="segment-btn" title="좌우 여백 늘리기">+</button>
                 </div>
             </div>
@@ -1726,7 +2000,7 @@
     </div>
 
     <!-- =========================================================
-         메인 작업 영역 (가상 스크롤 뷰포트 + 북마크 드로어/바텀 시트)
+         메인 작업 영역 (스크롤 뷰포트 / 책 넘김 뷰포트 + 북마크 드로어)
          ========================================================= -->
     <div class="workspace">
         <main id="dropZone" class="main-area">
@@ -1737,7 +2011,7 @@
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
                     </svg>
                     <div style="font-size:16px; font-weight:700;">여기에 텍스트 파일을 놓으세요</div>
-                    <div style="font-size:12.5px; color:var(--text-secondary); margin-top:4px;">대용량 텍스트 파일도 가상 스크롤로 즉시 열립니다</div>
+                    <div style="font-size:12.5px; color:var(--text-secondary); margin-top:4px;">대용량 텍스트 파일도 즉시 열립니다</div>
                 </div>
             </div>
 
@@ -1762,7 +2036,7 @@
                     </div>
                     <h1 class="empty-title">Text Viewer</h1>
                     <p class="empty-desc">
-                        가상 스크롤(Virtual Scrolling) 렌더링 엔진으로 수십 MB 이상의 장편 소설·로그·CSV 파일을 Mac, iPad, iPhone Safari에서 쾌적하게 탐색하며 보기 설정·북마크·읽은 위치를 자동 저장합니다.
+                        가상 스크롤과 책 넘김(페이지) 모드를 모두 지원합니다. 수십 MB 이상의 장편 소설·로그·CSV 파일을 Mac, iPad, iPhone Safari에서 쾌적하게 읽고 북마크·읽은 위치를 자동 저장하세요.
                     </p>
                     <div class="empty-actions">
                         <button id="emptyOpenBtn" class="btn btn-primary">파일 앱에서 열기</button>
@@ -1771,14 +2045,58 @@
                 </div>
             </div>
 
-            <!-- 가상 스크롤 뷰포트 (상하 여백 paddingV가 논리 스크롤 높이에 직접 반영됨) -->
-            <div id="vsViewport" class="vs-viewport font-sans mode-nowrap hidden" style="font-size: 15px;">
-                <div id="vsSpacer" class="vs-spacer">
-                    <div id="vsContent" class="vs-content"></div>
+            <!-- 1) 가상 스크롤 프레임 & 뷰포트 -->
+            <div id="vsFrame" class="vs-frame hidden">
+                <div id="vsViewport" class="vs-viewport font-serif mode-nowrap" style="font-size: 23px;">
+                    <div id="vsSpacer" class="vs-spacer">
+                        <div id="vsContent" class="vs-content"></div>
+                    </div>
                 </div>
             </div>
 
-            <!-- 맨 위로 플로팅 버튼 -->
+            <!-- 2) 책 넘김(페이지) 뷰포트 -->
+            <div id="pageViewport" class="page-viewport font-serif hidden" style="font-size: 23px;">
+                <div id="pageStage" class="page-stage">
+                    <div id="pageContent" class="page-content">
+                        <div id="pageInner" class="page-inner"></div>
+                    </div>
+                    <div id="pageMeasureBox" class="page-measure-box" aria-hidden="true"></div>
+                </div>
+
+                <!-- 데스크톱 좌우 플로팅 넘김 버튼 -->
+                <button id="pagePrevEdgeBtn" class="page-nav-edge page-nav-prev" title="이전 페이지 (←)" aria-label="이전 페이지">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6"/>
+                    </svg>
+                </button>
+                <button id="pageNextEdgeBtn" class="page-nav-edge page-nav-next" title="다음 페이지 (→)" aria-label="다음 페이지">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6"/>
+                    </svg>
+                </button>
+
+                <!-- 하단 페이지 컨트롤 바 -->
+                <div id="pageFooterBar" class="page-footer-bar">
+                    <button id="pageBarPrevBtn" class="page-bar-btn" title="이전 페이지 (←)">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="15 18 9 12 15 6"/>
+                        </svg>
+                        <span>이전</span>
+                    </button>
+                    <div class="page-indicator-wrap">
+                        <span id="pageIndicatorText" class="page-indicator-text">1 / 1 페이지</span>
+                        <span class="page-indicator-hint">좌우 탭 · 스와이프 · 방향키로 넘김</span>
+                    </div>
+                    <button id="pageBarNextBtn" class="page-bar-btn" title="다음 페이지 (→)">
+                        <span>다음</span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 18 15 12 9 6"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 맨 위로 플로팅 버튼 (스크롤 모드 전용) -->
             <button id="scrollTopBtn" class="fab-top hidden" title="맨 위로 이동">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="18 15 12 9 6 15"/>
@@ -1886,7 +2204,7 @@
 <script>
 /**
  * ============================================================================
- * Text Viewer - 고성능 대용량 텍스트 파일 뷰어 (Safari & 모바일/태블릿 최적화)
+ * Text Viewer - 대용량 가상 스크롤 & 책 넘김(페이지) 듀얼 모드 텍스트 뷰어
  * ============================================================================
  */
 (function () {
@@ -1900,6 +2218,12 @@
     const MAX_COPY_BYTES = 10 * 1024 * 1024;
     // 비동기 검색 블록 크기 (~512KB)
     const SEARCH_BLOCK_CHARS = 524288;
+    // 페이지 히스토리 스택 최대 크기
+    const MAX_PAGE_HISTORY = 500;
+    // 기본값 상수
+    const DEFAULT_FONT_SIZE = 23;
+    const DEFAULT_PADDING_V = 12;
+    const DEFAULT_PADDING_H = 24;
     // localStorage 키
     const STORAGE_PREFIX = 'tv_v2_meta_';
     const PREFS_STORAGE_KEY = 'tv_v2_prefs';
@@ -1909,6 +2233,7 @@
     const VALID_FONTS = ['sans', 'serif', 'mono'];
     const VALID_LEADINGS = [1.45, 1.75, 2.1];
     const VALID_ENCODINGS = ['utf-8', 'euc-kr'];
+    const VALID_VIEW_MODES = ['scroll', 'page'];
 
     // 테마별 Safari 상태바 / theme-color 메타 값
     const THEME_META = {
@@ -1930,23 +2255,39 @@
         parseTimeMs: 0,           // 파싱 시간(ms)
 
         // 보기 설정 (localStorage 자동 저장/복원 대상)
-        theme: 'light',           // 'light' | 'sepia' | 'dark'
-        fontFamily: 'sans',       // 'sans' | 'serif' | 'mono'
-        fontSize: 15,             // px (12 ~ 32)
+        viewMode: 'scroll',       // 'scroll' | 'page'
+        pageAnimation: true,      // 책 넘김 전환 애니메이션 켜기/끄기
+        theme: 'dark',            // 기본값: 다크
+        fontFamily: 'serif',      // 기본값: 바탕
+        fontSize: DEFAULT_FONT_SIZE,  // 기본값: 23px (12 ~ 32)
         lineHeightRatio: 1.75,    // 줄 간격 배수
-        paddingV: 12,             // 상하 여백 px (0 ~ 80, step 4)
-        paddingH: 16,             // 좌우 여백 px (0 ~ 80, step 4)
+        paddingV: DEFAULT_PADDING_V,  // 기본값: 12px (0 ~ 80, step 4)
+        paddingH: DEFAULT_PADDING_H,  // 기본값: 24px (0 ~ 80, step 4)
         showLineNumbers: true,    // 줄 번호 표시 여부
         showBookmarkIcons: true,  // 거터 북마크 아이콘 표시 여부
-        wordWrap: false,          // 자동 줄바꿈 여부
+        wordWrap: false,          // 자동 줄바꿈 여부 (스크롤 모드 전용, 페이지 모드는 자동 적용)
         isFullscreen: false,      // 전체화면(몰입 읽기) 모드 여부
 
         // 가상 스크롤 메트릭
-        baseRowHeight: 26,
+        baseRowHeight: 40,
         prefixHeights: null,      // Float64Array (가변 높이 누적 오프셋)
         logicalTotalHeight: 0,
         virtualScrollHeight: 0,
         scaleFactor: 1,
+
+        // 책 넘김(페이지) 상태
+        page: {
+            startLine: 0,         // 현재 페이지 시작 0-based 줄 인덱스
+            startOffset: 0,       // 현재 시작 줄 내부 문자 오프셋
+            nextLine: 0,          // 다음 페이지 시작 0-based 줄 인덱스
+            nextOffset: 0,        // 다음 페이지 시작 줄 내부 오프셋
+            endLine: 0,           // 현재 페이지 마지막 표시 줄 인덱스
+            hasPrev: false,
+            hasNext: false,
+            history: [],          // 이전 페이지 복원 스택 [{ line, offset }]
+            estimatedPage: 1,
+            estimatedTotalPages: 1
+        },
 
         // 검색 상태
         searchQuery: '',
@@ -2001,6 +2342,8 @@
         fullscreenBtn: document.getElementById('fullscreenBtn'),
         exitFullscreenBtn: document.getElementById('exitFullscreenBtn'),
 
+        viewmodeBtns: document.querySelectorAll('.viewmode-btn'),
+        togglePageAnimBtn: document.getElementById('togglePageAnimBtn'),
         themeBtns: document.querySelectorAll('.theme-btn'),
         fontBtns: document.querySelectorAll('.font-btn'),
         fontDecBtn: document.getElementById('fontDecBtn'),
@@ -2028,10 +2371,23 @@
         loadingText: document.getElementById('loadingText'),
         emptyState: document.getElementById('emptyState'),
 
+        vsFrame: document.getElementById('vsFrame'),
         vsViewport: document.getElementById('vsViewport'),
         vsSpacer: document.getElementById('vsSpacer'),
         vsContent: document.getElementById('vsContent'),
         scrollTopBtn: document.getElementById('scrollTopBtn'),
+
+        pageViewport: document.getElementById('pageViewport'),
+        pageStage: document.getElementById('pageStage'),
+        pageContent: document.getElementById('pageContent'),
+        pageInner: document.getElementById('pageInner'),
+        pageMeasureBox: document.getElementById('pageMeasureBox'),
+        pagePrevEdgeBtn: document.getElementById('pagePrevEdgeBtn'),
+        pageNextEdgeBtn: document.getElementById('pageNextEdgeBtn'),
+        pageFooterBar: document.getElementById('pageFooterBar'),
+        pageBarPrevBtn: document.getElementById('pageBarPrevBtn'),
+        pageBarNextBtn: document.getElementById('pageBarNextBtn'),
+        pageIndicatorText: document.getElementById('pageIndicatorText'),
 
         drawerBackdrop: document.getElementById('drawerBackdrop'),
         bookmarkDrawer: document.getElementById('bookmarkDrawer'),
@@ -2081,7 +2437,7 @@
             } catch (e) {}
         }
 
-        scheduleViewportReflow(false);
+        scheduleViewportReflow(true);
     }
 
     function exitFullscreen(exitNative = true) {
@@ -2100,7 +2456,7 @@
             } catch (e) {}
         }
 
-        scheduleViewportReflow(false);
+        scheduleViewportReflow(true);
     }
 
     function handleNativeFullscreenChange() {
@@ -2139,6 +2495,8 @@
     function saveUserPreferences() {
         try {
             const payload = {
+                viewMode: state.viewMode,
+                pageAnimation: state.pageAnimation,
                 theme: state.theme,
                 fontFamily: state.fontFamily,
                 fontSize: state.fontSize,
@@ -2158,29 +2516,67 @@
     }
 
     function applyTheme(theme, persist = true) {
-        const safeTheme = VALID_THEMES.includes(theme) ? theme : 'light';
+        const safeTheme = VALID_THEMES.includes(theme) ? theme : 'dark';
         state.theme = safeTheme;
         document.documentElement.setAttribute('data-theme', safeTheme);
         els.themeBtns.forEach(b => b.classList.toggle('active', b.dataset.theme === safeTheme));
-        const meta = THEME_META[safeTheme] || THEME_META.light;
+        const meta = THEME_META[safeTheme] || THEME_META.dark;
         if (els.themeColorMeta) els.themeColorMeta.setAttribute('content', meta.color);
         if (els.appleStatusBarMeta) els.appleStatusBarMeta.setAttribute('content', meta.statusBar);
         if (persist) saveUserPreferences();
     }
 
+    /**
+     * 스크롤 뷰포트 높이를 한 줄 높이(baseRowHeight)의 정수 배로 맞춰
+     * 화면 하단에 다음 줄 윗부분이 2~3px 잘려 보이는 현상을 방지
+     */
+    function syncScrollViewportHeight() {
+        if (els.vsFrame.classList.contains('hidden')) return;
+        const frameH = els.vsFrame.clientHeight;
+        if (frameH <= 0) return;
+
+        const availH = Math.max(state.baseRowHeight, frameH - (state.paddingV * 2));
+        const snappedH = Math.max(state.baseRowHeight, Math.floor(availH / state.baseRowHeight) * state.baseRowHeight);
+        els.vsViewport.style.height = `${snappedH}px`;
+    }
+
+    function syncViewportVisibility() {
+        if (state.totalLines === 0) {
+            els.vsFrame.classList.add('hidden');
+            els.pageViewport.classList.add('hidden');
+            els.scrollTopBtn.classList.add('hidden');
+            return;
+        }
+        const isPage = state.viewMode === 'page';
+        els.vsFrame.classList.toggle('hidden', isPage);
+        els.pageViewport.classList.toggle('hidden', !isPage);
+        if (isPage) {
+            els.scrollTopBtn.classList.add('hidden');
+        } else {
+            syncScrollViewportHeight();
+        }
+    }
+
     function syncPreferencesUI() {
         applyTheme(state.theme, false);
 
-        // 글꼴
-        els.vsViewport.classList.remove('font-sans', 'font-serif', 'font-mono');
-        els.vsViewport.classList.add(`font-${state.fontFamily}`);
+        // 읽기 방식 & 페이지 전환 애니메이션
+        els.viewmodeBtns.forEach(b => b.classList.toggle('active', b.dataset.viewmode === state.viewMode));
+        els.togglePageAnimBtn.classList.toggle('active', state.pageAnimation);
+
+        // 글꼴 (스크롤·페이지 뷰포트 동시 동기화)
+        [els.vsViewport, els.pageViewport].forEach(vp => {
+            vp.classList.remove('font-sans', 'font-serif', 'font-mono');
+            vp.classList.add(`font-${state.fontFamily}`);
+            vp.style.fontSize = `${state.fontSize}px`;
+        });
         els.fontBtns.forEach(b => b.classList.toggle('active', b.dataset.font === state.fontFamily));
 
         // 글자 크기 & 줄간격
-        els.vsViewport.style.fontSize = `${state.fontSize}px`;
         els.fontResetBtn.textContent = `${state.fontSize}px`;
         state.baseRowHeight = Math.max(18, Math.round(state.fontSize * state.lineHeightRatio));
         els.vsViewport.style.setProperty('--vs-row-h', `${state.baseRowHeight}px`);
+        els.pageViewport.style.setProperty('--vs-row-h', `${state.baseRowHeight}px`);
         els.leadingBtns.forEach(b => b.classList.toggle('active', parseFloat(b.dataset.leading) === state.lineHeightRatio));
 
         // 상하 / 좌우 여백
@@ -2192,7 +2588,12 @@
         // 줄 번호 & 북마크 표시 & 자동 줄바꿈
         els.toggleLineNumBtn.classList.toggle('active', state.showLineNumbers);
         els.toggleBookmarkIconBtn.classList.toggle('active', state.showBookmarkIcons);
-        els.toggleWrapBtn.classList.toggle('active', state.wordWrap);
+        els.toggleWrapBtn.classList.toggle('active', state.viewMode === 'page' ? true : state.wordWrap);
+        els.toggleWrapBtn.disabled = state.viewMode === 'page';
+        els.toggleWrapBtn.title = state.viewMode === 'page'
+            ? '책 넘김 모드에서는 자동 줄바꿈이 기본 적용됩니다.'
+            : '끄면 고정 행 높이 + 가로 스크롤로 100만 줄도 60fps 정밀 스크롤';
+
         els.vsViewport.classList.toggle('mode-wrap', state.wordWrap);
         els.vsViewport.classList.toggle('mode-nowrap', !state.wordWrap);
 
@@ -2210,6 +2611,12 @@
             if (raw) {
                 const parsed = JSON.parse(raw);
                 if (parsed && typeof parsed === 'object') {
+                    if (VALID_VIEW_MODES.includes(parsed.viewMode)) {
+                        state.viewMode = parsed.viewMode;
+                    }
+                    if (typeof parsed.pageAnimation === 'boolean') {
+                        state.pageAnimation = parsed.pageAnimation;
+                    }
                     if (VALID_THEMES.includes(parsed.theme)) {
                         state.theme = parsed.theme;
                     }
@@ -2324,7 +2731,6 @@
 
     /**
      * 거터(줄 번호 + 북마크 아이콘) 최소 너비 계산
-     * 둘 다 숨김이면 0px 반환
      */
     function getGutterWidth() {
         if (!state.showLineNumbers && !state.showBookmarkIcons) {
@@ -2338,6 +2744,23 @@
             return Math.max(42, digits * 9 + 18);
         }
         return 32;
+    }
+
+    function getActiveViewportWidth() {
+        return (
+            (state.viewMode === 'page' ? els.pageStage.clientWidth : els.vsViewport.clientWidth) ||
+            els.dropZone.clientWidth ||
+            window.innerWidth ||
+            375
+        );
+    }
+
+    function getCurrentTopLineIndex() {
+        if (state.totalLines === 0) return 0;
+        if (state.viewMode === 'page') {
+            return Math.min(state.totalLines - 1, Math.max(0, state.page.startLine));
+        }
+        return findLineIndexAtY(getLogicalScrollTop());
     }
 
     function getLineText(idx) {
@@ -2414,6 +2837,93 @@
     }
 
     /* ========================================================================
+       행(Row) DOM 빌더 (가상 스크롤 · 책 넘김 모드 공용)
+       ======================================================================== */
+    function buildSearchRegex() {
+        const trimmedQuery = state.searchQuery.trim();
+        if (!trimmedQuery) return null;
+        try {
+            return new RegExp(`(${escapeRegExp(trimmedQuery)})`, state.caseSensitive ? 'g' : 'gi');
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function createRowElement(lineIdx, sliceText, options = {}) {
+        const {
+            isContinuation = false,
+            gutterMinWidth = getGutterWidth(),
+            searchRegex = null,
+            activeMatchLineIdx = -1,
+            fixedHeight = false
+        } = options;
+
+        const lineNum = lineIdx + 1;
+        const isBookmarked = state.bookmarks.has(lineNum);
+        const showGutter = gutterMinWidth > 0;
+
+        const row = document.createElement('div');
+        row.className = 'vs-row';
+        row.dataset.line = String(lineNum);
+        if (isBookmarked) row.classList.add('is-bookmarked');
+        row.style.cssText = fixedHeight
+            ? `height:${state.baseRowHeight}px; line-height:${state.baseRowHeight}px;`
+            : `min-height:${state.baseRowHeight}px; line-height:${state.baseRowHeight}px;`;
+
+        if (showGutter) {
+            const gutter = document.createElement('span');
+            gutter.className = isContinuation ? 'vs-gutter is-continuation' : 'vs-gutter';
+            gutter.style.minWidth = `${gutterMinWidth}px`;
+
+            if (!isContinuation) {
+                gutter.dataset.line = String(lineNum);
+                gutter.title = isBookmarked ? `${lineNum}줄 북마크 해제` : `${lineNum}줄 북마크 추가`;
+
+                let gutterHtml = '';
+                if (state.showBookmarkIcons) {
+                    const ribbonSvg = isBookmarked
+                        ? `<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>`
+                        : `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>`;
+                    gutterHtml += `<span class="bm-ribbon-icon">${ribbonSvg}</span>`;
+                }
+                if (state.showLineNumbers) {
+                    gutterHtml += `<span class="vs-line-num-text">${lineNum}</span>`;
+                }
+                gutter.innerHTML = gutterHtml;
+            }
+            row.appendChild(gutter);
+        }
+
+        const textSpan = document.createElement('span');
+        textSpan.className = 'vs-line-text';
+
+        if (searchRegex && sliceText.length > 0) {
+            searchRegex.lastIndex = 0;
+            if (searchRegex.test(sliceText)) {
+                searchRegex.lastIndex = 0;
+                const isCurrentRow = (lineIdx === activeMatchLineIdx);
+                const parts = sliceText.split(searchRegex);
+                let html = '';
+                for (let p = 0; p < parts.length; p++) {
+                    if (p % 2 === 1) {
+                        html += `<mark class="hl${isCurrentRow ? ' active' : ''}">${escapeHtml(parts[p])}</mark>`;
+                    } else {
+                        html += escapeHtml(parts[p]);
+                    }
+                }
+                textSpan.innerHTML = html;
+            } else {
+                textSpan.textContent = sliceText.length === 0 ? ' ' : sliceText;
+            }
+        } else {
+            textSpan.textContent = sliceText.length === 0 ? ' ' : sliceText;
+        }
+
+        row.appendChild(textSpan);
+        return row;
+    }
+
+    /* ========================================================================
        localStorage 북마크 및 마지막 읽은 위치 영속화
        ======================================================================== */
     function getStorageKey() {
@@ -2426,7 +2936,7 @@
         if (!key || state.totalLines === 0) return;
 
         try {
-            const currentTopLine = findLineIndexAtY(getLogicalScrollTop()) + 1;
+            const currentTopLine = getCurrentTopLineIndex() + 1;
             const bookmarksArray = Array.from(state.bookmarks.values())
                 .sort((a, b) => a.line - b.line);
 
@@ -2505,6 +3015,18 @@
     /* ========================================================================
        북마크 관리 (토글, 메모, 순회, 전체 삭제, 사이드 패널/바텀 시트 UI)
        ======================================================================== */
+    function renderActiveView(animDir = null) {
+        if (state.totalLines === 0) return;
+        if (state.viewMode === 'page') {
+            renderPageMode(animDir);
+        } else {
+            syncScrollViewportHeight();
+            state.lastRenderedStart = -1;
+            renderVisibleRows();
+            updateScrollStatus();
+        }
+    }
+
     function toggleBookmark(lineNum, forceState = null) {
         if (state.totalLines === 0 || lineNum < 1 || lineNum > state.totalLines) return;
 
@@ -2524,8 +3046,7 @@
 
         saveFileMetadata();
         renderBookmarkDrawer();
-        state.lastRenderedStart = -1;
-        renderVisibleRows();
+        renderActiveView(null);
     }
 
     function updateBookmarkMemo(lineNum, memoText) {
@@ -2546,10 +3067,16 @@
             return;
         }
 
-        const logicalTop = getLogicalScrollTop();
-        const viewportHeight = els.vsViewport.clientHeight || 600;
-        const firstVisibleLine = findLineIndexAtY(logicalTop) + 1;
-        const lastVisibleLine = findLineIndexAtY(logicalTop + viewportHeight) + 1;
+        let firstVisibleLine, lastVisibleLine;
+        if (state.viewMode === 'page') {
+            firstVisibleLine = state.page.startLine + 1;
+            lastVisibleLine = state.page.endLine + 1;
+        } else {
+            const logicalTop = getLogicalScrollTop();
+            const viewportHeight = els.vsViewport.clientHeight || 600;
+            firstVisibleLine = findLineIndexAtY(logicalTop) + 1;
+            lastVisibleLine = findLineIndexAtY(logicalTop + viewportHeight) + 1;
+        }
 
         const hasVisibleActive =
             state.activeBookmarkLine !== null &&
@@ -2709,7 +3236,6 @@
                     const decoder = new TextDecoder(state.encoding);
                     const text = decoder.decode(buffer);
 
-                    // buffer는 스코프 종료 시 즉시 GC 대상이 되어 RAM 이중 점유 방지
                     state.rawText = text;
                     buildLineIndex(text);
                     const t1 = performance.now();
@@ -2717,7 +3243,7 @@
 
                     // UI 활성화
                     els.emptyState.classList.add('hidden');
-                    els.vsViewport.classList.remove('hidden');
+                    syncViewportVisibility();
                     els.openGotoModalBtn.disabled = false;
 
                     // 상태바 갱신
@@ -2733,12 +3259,14 @@
                     if (resetScroll) {
                         state.suppressSaveUntil = performance.now() + 500;
                         els.vsViewport.scrollTop = 0;
+                        state.page.startLine = 0;
+                        state.page.startOffset = 0;
+                        state.page.history = [];
                     }
 
                     if (loadSavedMeta) {
                         loadFileMetadata();
                     } else {
-                        // 인코딩 전환 시에도 북마크 미리보기 스니펫 즉시 갱신
                         renderBookmarkDrawer();
                     }
 
@@ -2753,8 +3281,7 @@
 
                     state.lastRenderedStart = -1;
                     state.lastRenderedEnd = -1;
-                    renderVisibleRows();
-                    updateScrollStatus();
+                    renderActiveView(null);
 
                     setLoading(false);
                     showToast(`${state.totalLines.toLocaleString()}줄 로드 완료 (${state.parseTimeMs}ms)`);
@@ -2768,27 +3295,38 @@
     }
 
     /**
-     * 가이드 문서 생성 (기능·글꼴·여백·전체화면 테스트용)
+     * 가이드 문서 생성 (스크롤/책 넘김/애니메이션/글꼴/여백/전체화면 테스트용)
      */
     function generateMiniSample() {
         const sampleText = [
             '=== Text Viewer 가이드 문서 ===',
             '',
-            '1. 가상 스크롤(Virtual Scrolling) 렌더링 엔진',
-            '   화면에 보이는 영역과 위아래 버퍼(±18줄)만 DOM으로 생성하여',
-            '   대용량 소설, 로그, CSV 파일도 끊김 없이 쾌적하게 탐색합니다.',
+            '1. 읽기 방식 전환 (스크롤 / 책 넘김) 및 넘김 효과',
+            '   상단 [보기 설정]에서 스크롤 형식과 책 넘김(페이지) 형식 중 원하는 방식을 선택할 수 있습니다.',
+            '   [넘김 효과] 버튼으로 페이지 전환 애니메이션을 켜거나 끌 수 있으며, 모드를 전환해도 현재 읽고 있던 줄 위치가 그대로 유지됩니다.',
             '',
-            '2. 한글 글꼴 3종 지원 (고딕 / 바탕 / 고정폭)',
-            '   보기 설정에서 고딕(산세리프), 바탕(Noto Serif KR 명조), 고정폭(D2Coding)을',
-            '   전환하면 iPhone·iPad Safari에서도 한글 서체가 즉시 바뀝니다.',
+            '2. 가상 스크롤(Virtual Scrolling) 렌더링 엔진',
+            '   화면에 보이는 영역과 위아래 버퍼(±18줄)만 DOM으로 생성하여 수십 MB 이상의 대용량 소설, 로그, CSV 파일도 끊김 없이 쾌적하게 탐색합니다.',
+            '   표시 영역을 한 줄 높이의 정수 배로 정렬해 화면 끝부분에 다음 줄 윗부분이 잘려 보이는 현상을 방지합니다.',
+            '',
+            '3. 한글 글꼴 3종 지원 (고딕 / 바탕 / 고정폭)',
+            '   보기 설정에서 고딕(산세리프), 바탕(Noto Serif KR 명조), 고정폭(D2Coding)을 전환하면 iPhone·iPad Safari에서도 한글 서체가 즉시 바뀝니다.',
             '   영문/숫자 정렬 테스트: ABCDEFG 1234567 | 가나다라마바사 1234567',
             '',
-            '3. 상하 여백 · 좌우 여백 · 표시 옵션 조절',
-            '   보기 설정에서 상하 여백과 좌우 여백을 0px~80px 범위로 조절하고,',
-            '   줄 번호와 북마크 표시 아이콘을 각각 켜거나 끌 수 있습니다.',
+            '4. 상하 여백 · 좌우 여백 · 표시 옵션 조절',
+            '   기본값으로 다크 테마, 바탕 글꼴, 23px 크기, 24px 좌우 여백이 적용되어 장편 소설 독서에 최적화되어 있습니다.',
             '',
-            '4. 전체화면(몰입 읽기) 모드',
-            '   상단 우측 전체화면 아이콘을 누르면 모든 UI 바가 숨겨지고 본문만 표시됩니다.'
+            '5. 북마크 · 본문 검색 · 자동 위치 저장',
+            '   왼쪽 줄 번호 영역을 탭하거나 클릭하면 해당 줄에 북마크가 추가되며 메모도 남길 수 있습니다.',
+            '   파일을 닫았다가 다시 열면 마지막 읽은 위치로 돌아갈 수 있는 복원 배너가 표시됩니다.',
+            '',
+            '6. 전체화면(몰입 읽기) 모드',
+            '   상단 우측 전체화면 아이콘을 누르면 모든 UI 바가 숨겨지고 본문만 표시됩니다.',
+            '',
+            '--- 긴 문단 페이지 분할 테스트 ---',
+            '어느 맑은 가을 오후, 서재 창가로 스며든 햇빛이 책상 위 원고지를 따뜻하게 비추고 있었다. 바람이 불 때마다 창밖의 은행나무 잎사귀들이 사각거리며 작은 파도처럼 일렁였고, 그 소리는 고요한 방 안의 시간을 천천히 흘려보냈다. 책장을 한 장씩 넘기는 감각은 단순한 정보의 이동을 넘어 문장과 문장 사이에 머무르는 호흡을 만들어 준다. 긴 문장이 화면 끝을 넘어 다음 페이지로 자연스럽게 이어질 때도 한 글자도 잘리지 않고 깔끔하게 정렬된다면, 독자는 기술의 존재를 잊은 채 오직 이야기에만 몰입할 수 있다.',
+            '',
+            '--- 가이드 문서 끝 ---'
         ].join('\n');
 
         const blob = new Blob([sampleText], { type: 'text/plain;charset=utf-8' });
@@ -2801,7 +3339,7 @@
     }
 
     /* ========================================================================
-       가상 스크롤 메트릭 계산 (한글/CJK 전각 가중치 + 상하·좌우 여백 반영)
+       가상 스크롤 및 추정 페이지 메트릭 계산
        ======================================================================== */
     function measureLineVisualEm(idx, isMono) {
         const start = state.lineStarts[idx];
@@ -2838,15 +3376,22 @@
 
         state.baseRowHeight = Math.max(18, Math.round(state.fontSize * state.lineHeightRatio));
         els.vsViewport.style.setProperty('--vs-row-h', `${state.baseRowHeight}px`);
+        els.pageViewport.style.setProperty('--vs-row-h', `${state.baseRowHeight}px`);
 
-        if (!state.wordWrap) {
+        if (state.viewMode === 'scroll') {
+            syncScrollViewportHeight();
+        }
+
+        const needsWrapMetrics = state.wordWrap || state.viewMode === 'page';
+
+        if (!needsWrapMetrics) {
             state.prefixHeights = null;
-            state.logicalTotalHeight = state.paddingV + (state.totalLines * state.baseRowHeight) + state.paddingV;
+            state.logicalTotalHeight = state.totalLines * state.baseRowHeight;
         } else {
             const gutterWidth = getGutterWidth();
             const gutterSpace = gutterWidth > 0 ? gutterWidth + 12 : 0;
             const rowChrome = state.paddingH * 2;
-            const rawTextWidth = els.vsViewport.clientWidth - gutterSpace - rowChrome;
+            const rawTextWidth = getActiveViewportWidth() - gutterSpace - rowChrome;
             const effectiveWidthPx = Math.max(120, rawTextWidth - state.fontSize * 0.8);
             const isMono = state.fontFamily === 'mono';
 
@@ -2861,7 +3406,7 @@
                 prefix[i + 1] = acc;
             }
             state.prefixHeights = prefix;
-            state.logicalTotalHeight = state.paddingV + acc + (state.baseRowHeight * 2) + state.paddingV;
+            state.logicalTotalHeight = acc + (state.baseRowHeight * 2);
         }
 
         if (state.logicalTotalHeight > MAX_SCROLL_HEIGHT) {
@@ -2886,16 +3431,16 @@
     }
 
     function getLineTopY(lineIndex) {
-        if (lineIndex <= 0) return state.paddingV;
+        if (lineIndex <= 0) return 0;
         if (!state.wordWrap || !state.prefixHeights) {
-            return state.paddingV + (lineIndex * state.baseRowHeight);
+            return lineIndex * state.baseRowHeight;
         }
-        return state.paddingV + state.prefixHeights[Math.min(lineIndex, state.totalLines)];
+        return state.prefixHeights[Math.min(lineIndex, state.totalLines)];
     }
 
     function findLineIndexAtY(logicalY) {
         if (state.totalLines === 0) return 0;
-        const contentY = Math.max(0, logicalY - state.paddingV);
+        const contentY = Math.max(0, logicalY);
         if (!state.wordWrap || !state.prefixHeights) {
             return Math.min(state.totalLines - 1, Math.max(0, Math.floor(contentY / state.baseRowHeight)));
         }
@@ -2917,10 +3462,10 @@
     }
 
     /* ========================================================================
-       가상 스크롤 뷰포트 렌더링 (rAF 60fps 최적화 + 토글형 거터 통합)
+       가상 스크롤 뷰포트 렌더링 (rAF 60fps 최적화)
        ======================================================================== */
     function renderVisibleRows() {
-        if (state.totalLines === 0) return;
+        if (state.totalLines === 0 || state.viewMode !== 'scroll') return;
 
         const viewportHeight = els.vsViewport.clientHeight || 600;
         const domScrollTop = els.vsViewport.scrollTop;
@@ -2945,87 +3490,22 @@
         state.lastRenderedEnd = endIdx;
 
         const gutterMinWidth = getGutterWidth();
-        const showGutter = gutterMinWidth > 0;
-        const trimmedQuery = state.searchQuery.trim();
-        const hasQuery = trimmedQuery.length > 0;
-        const activeMatchLineIdx = (hasQuery && state.currentMatchCursor >= 0 && state.currentMatchCursor < state.matchLineIndices.length)
+        const searchRegex = buildSearchRegex();
+        const activeMatchLineIdx = (searchRegex && state.currentMatchCursor >= 0 && state.currentMatchCursor < state.matchLineIndices.length)
             ? state.matchLineIndices[state.currentMatchCursor]
             : -1;
 
-        let searchRegex = null;
-        if (hasQuery) {
-            try {
-                searchRegex = new RegExp(`(${escapeRegExp(trimmedQuery)})`, state.caseSensitive ? 'g' : 'gi');
-            } catch (e) {
-                searchRegex = null;
-            }
-        }
-
         const fragment = document.createDocumentFragment();
-        const rowStyleHeight = !state.wordWrap
-            ? `height:${state.baseRowHeight}px; line-height:${state.baseRowHeight}px;`
-            : `min-height:${state.baseRowHeight}px; line-height:${state.baseRowHeight}px;`;
+        const fixedHeight = !state.wordWrap;
 
         for (let i = startIdx; i <= endIdx; i++) {
-            const lineNum = i + 1;
-            const isBookmarked = state.bookmarks.has(lineNum);
-
-            const row = document.createElement('div');
-            row.className = 'vs-row';
-            row.dataset.line = String(lineNum);
-            if (isBookmarked) row.classList.add('is-bookmarked');
-            row.style.cssText = rowStyleHeight;
-
-            // 거터 (줄 번호 / 북마크 표시 설정에 따라 동적 구성)
-            if (showGutter) {
-                const gutter = document.createElement('span');
-                gutter.className = 'vs-gutter';
-                gutter.dataset.line = String(lineNum);
-                gutter.title = isBookmarked ? `${lineNum}줄 북마크 해제` : `${lineNum}줄 북마크 추가`;
-                gutter.style.minWidth = `${gutterMinWidth}px`;
-
-                let gutterHtml = '';
-                if (state.showBookmarkIcons) {
-                    const ribbonSvg = isBookmarked
-                        ? `<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>`
-                        : `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>`;
-                    gutterHtml += `<span class="bm-ribbon-icon">${ribbonSvg}</span>`;
-                }
-                if (state.showLineNumbers) {
-                    gutterHtml += `<span class="vs-line-num-text">${lineNum}</span>`;
-                }
-                gutter.innerHTML = gutterHtml;
-                row.appendChild(gutter);
-            }
-
-            // 본문 텍스트 (검색 시에만 인라인 <mark> 하이라이트)
-            const textSpan = document.createElement('span');
-            textSpan.className = 'vs-line-text';
-            const rawLine = getLineText(i);
-
-            if (searchRegex && rawLine.length > 0) {
-                searchRegex.lastIndex = 0;
-                if (searchRegex.test(rawLine)) {
-                    searchRegex.lastIndex = 0;
-                    const isCurrentRow = (i === activeMatchLineIdx);
-                    const parts = rawLine.split(searchRegex);
-                    let html = '';
-                    for (let p = 0; p < parts.length; p++) {
-                        if (p % 2 === 1) {
-                            html += `<mark class="hl${isCurrentRow ? ' active' : ''}">${escapeHtml(parts[p])}</mark>`;
-                        } else {
-                            html += escapeHtml(parts[p]);
-                        }
-                    }
-                    textSpan.innerHTML = html;
-                } else {
-                    textSpan.textContent = rawLine.length === 0 ? ' ' : rawLine;
-                }
-            } else {
-                textSpan.textContent = rawLine.length === 0 ? ' ' : rawLine;
-            }
-
-            row.appendChild(textSpan);
+            const row = createRowElement(i, getLineText(i), {
+                isContinuation: false,
+                gutterMinWidth,
+                searchRegex,
+                activeMatchLineIdx,
+                fixedHeight
+            });
             fragment.appendChild(row);
         }
 
@@ -3034,7 +3514,7 @@
     }
 
     function updateScrollStatus() {
-        if (state.totalLines === 0) return;
+        if (state.totalLines === 0 || state.viewMode !== 'scroll') return;
 
         const logicalTop = getLogicalScrollTop();
         const currentLineIdx = findLineIndexAtY(logicalTop);
@@ -3056,13 +3536,370 @@
         }
     }
 
+    /* ========================================================================
+       책 넘김(페이지) 렌더링 엔진 (실측 오프스크린 페이지 분할)
+       ======================================================================== */
+    function getPageAvailableHeight() {
+        const stageH = els.pageStage.clientHeight || 400;
+        const innerH = Math.max(state.baseRowHeight, stageH - (state.paddingV * 2));
+        // 한 줄 높이의 정수 배로 정확히 맞춰 상·하단 글자 끝부분 잘림 방지
+        return Math.max(state.baseRowHeight, Math.floor(innerH / state.baseRowHeight) * state.baseRowHeight);
+    }
+
+    /**
+     * (startLine, startOffset)에서 시작해 한 페이지에 정확히 들어가는 세그먼트 목록을 실측
+     */
+    function measureForwardPage(startLine, startOffset) {
+        const availH = getPageAvailableHeight();
+        const maxFitH = availH + 1; // 서브픽셀 반올림 허용 오차 1px
+        const gutterMinWidth = getGutterWidth();
+        const measureBox = els.pageMeasureBox;
+        measureBox.innerHTML = '';
+
+        const segments = [];
+        let curLine = Math.min(state.totalLines - 1, Math.max(0, startLine));
+        let curOff = Math.max(0, startOffset);
+
+        while (curLine < state.totalLines) {
+            const fullText = getLineText(curLine);
+            if (curOff > fullText.length) {
+                curLine++;
+                curOff = 0;
+                continue;
+            }
+
+            const slice = curOff === 0 ? fullText : fullText.slice(curOff);
+            const isCont = curOff > 0;
+            const row = createRowElement(curLine, slice, {
+                isContinuation: isCont,
+                gutterMinWidth,
+                searchRegex: null,
+                fixedHeight: false
+            });
+            measureBox.appendChild(row);
+
+            // 현재 줄 전체(또는 남은 조각 전체)가 페이지 안에 들어가는 경우
+            if (measureBox.scrollHeight <= maxFitH) {
+                segments.push({
+                    lineIdx: curLine,
+                    start: curOff,
+                    end: fullText.length,
+                    isContinuation: isCont
+                });
+                curLine++;
+                curOff = 0;
+                continue;
+            }
+
+            // 빈 줄인데 이미 공간이 부족한 경우
+            if (slice.length === 0) {
+                if (segments.length === 0) {
+                    segments.push({ lineIdx: curLine, start: 0, end: 0, isContinuation: false });
+                    curLine++;
+                    curOff = 0;
+                } else {
+                    measureBox.removeChild(row);
+                }
+                break;
+            }
+
+            // 현재 줄이 페이지 높이를 넘으므로 이진 탐색으로 최대 수용 문자 수 탐색
+            const textSpan = row.querySelector('.vs-line-text');
+            let low = 1;
+            let high = slice.length - 1;
+            let bestLen = 0;
+
+            while (low <= high) {
+                const mid = (low + high) >>> 1;
+                textSpan.textContent = slice.slice(0, mid);
+                if (measureBox.scrollHeight <= maxFitH) {
+                    bestLen = mid;
+                    low = mid + 1;
+                } else {
+                    high = mid - 1;
+                }
+            }
+
+            // 단어가 잘리지 않도록 직전 공백 경계 보정 (최대 14자 이내 공백 존재 시)
+            if (bestLen > 1 && bestLen < slice.length && slice[bestLen] !== ' ') {
+                const searchBackLimit = Math.max(1, bestLen - 14);
+                for (let b = bestLen - 1; b >= searchBackLimit; b--) {
+                    if (slice[b] === ' ' || slice[b] === '\t') {
+                        bestLen = b + 1;
+                        break;
+                    }
+                }
+            }
+
+            if (bestLen > 0) {
+                segments.push({
+                    lineIdx: curLine,
+                    start: curOff,
+                    end: curOff + bestLen,
+                    isContinuation: isCont
+                });
+                curOff += bestLen;
+                if (curOff >= fullText.length) {
+                    curLine++;
+                    curOff = 0;
+                }
+            } else if (segments.length === 0) {
+                segments.push({
+                    lineIdx: curLine,
+                    start: curOff,
+                    end: curOff + 1,
+                    isContinuation: isCont
+                });
+                curOff += 1;
+                if (curOff >= fullText.length) {
+                    curLine++;
+                    curOff = 0;
+                }
+            } else {
+                measureBox.removeChild(row);
+            }
+            break;
+        }
+
+        measureBox.innerHTML = '';
+
+        const hasNext = curLine < state.totalLines;
+        return {
+            segments,
+            nextLine: hasNext ? curLine : state.totalLines,
+            nextOffset: hasNext ? curOff : 0,
+            hasNext,
+            availH
+        };
+    }
+
+    /**
+     * 히스토리 스택이 비었을 때(점프 직후 등) 이전 페이지 시작 위치를 정확히 역산
+     */
+    function computePrevPageStart(targetLine, targetOffset) {
+        if (targetLine <= 0 && targetOffset <= 0) {
+            return { line: 0, offset: 0 };
+        }
+
+        const availH = getPageAvailableHeight();
+        let lookbackLines = Math.max(24, Math.ceil((availH / state.baseRowHeight) * 2.2));
+        let probeLine = targetOffset > 0 ? targetLine : Math.max(0, targetLine - lookbackLines);
+        let probeOffset = 0;
+
+        for (let attempt = 0; attempt < 4; attempt++) {
+            let curL = probeLine;
+            let curO = probeOffset;
+            let lastValidStart = { line: curL, offset: curO };
+            let steps = 0;
+
+            while (steps < 200) {
+                const res = measureForwardPage(curL, curO);
+                const reached =
+                    res.nextLine > targetLine ||
+                    (res.nextLine === targetLine && res.nextOffset >= targetOffset) ||
+                    !res.hasNext;
+
+                if (reached) {
+                    if (steps === 0 && probeLine > 0) {
+                        break;
+                    }
+                    return lastValidStart;
+                }
+
+                lastValidStart = { line: res.nextLine, offset: res.nextOffset };
+                curL = res.nextLine;
+                curO = res.nextOffset;
+                steps++;
+            }
+
+            if (probeLine === 0) {
+                return { line: 0, offset: 0 };
+            }
+            lookbackLines *= 2;
+            probeLine = Math.max(0, targetLine - lookbackLines);
+            probeOffset = 0;
+        }
+
+        return { line: Math.max(0, targetLine - 1), offset: 0 };
+    }
+
+    function updatePageStatus() {
+        if (state.totalLines === 0 || state.viewMode !== 'page') return;
+
+        const availH = getPageAvailableHeight();
+        const totalContentH = state.prefixHeights
+            ? state.prefixHeights[state.totalLines]
+            : state.totalLines * state.baseRowHeight;
+
+        const estTotalPages = Math.max(1, Math.ceil(totalContentH / availH));
+        let curY = state.prefixHeights
+            ? state.prefixHeights[Math.min(state.page.startLine, state.totalLines)]
+            : state.page.startLine * state.baseRowHeight;
+
+        if (state.page.startOffset > 0 && state.prefixHeights) {
+            const fullLen = Math.max(1, getLineText(state.page.startLine).length);
+            const lineH = state.prefixHeights[state.page.startLine + 1] - state.prefixHeights[state.page.startLine];
+            curY += lineH * (state.page.startOffset / fullLen);
+        }
+
+        let estPage;
+        if (!state.page.hasPrev) {
+            estPage = 1;
+        } else if (!state.page.hasNext) {
+            estPage = estTotalPages;
+        } else {
+            estPage = Math.min(estTotalPages, Math.max(2, Math.floor(curY / availH) + 1));
+        }
+
+        state.page.estimatedPage = estPage;
+        state.page.estimatedTotalPages = estTotalPages;
+
+        const pct = !state.page.hasNext
+            ? 100
+            : (!state.page.hasPrev ? 0 : Math.min(99.9, Math.max(0, (curY / Math.max(1, totalContentH)) * 100)));
+
+        els.pageIndicatorText.textContent = `${estPage.toLocaleString()} / ${estTotalPages.toLocaleString()} 페이지`;
+        els.pageBarPrevBtn.disabled = !state.page.hasPrev;
+        els.pageBarNextBtn.disabled = !state.page.hasNext;
+        els.pagePrevEdgeBtn.disabled = !state.page.hasPrev;
+        els.pageNextEdgeBtn.disabled = !state.page.hasNext;
+
+        els.statCurrentLine.textContent = (state.page.startLine + 1).toLocaleString();
+        els.progressFill.style.width = `${pct.toFixed(1)}%`;
+        els.statProgress.textContent = `${pct.toFixed(1)}%`;
+    }
+
+    function triggerPageAnimation(animDir) {
+        els.pageContent.classList.remove('turn-next', 'turn-prev');
+        if (!animDir || !state.pageAnimation) return;
+        void els.pageContent.offsetWidth;
+        els.pageContent.classList.add(animDir === 'next' ? 'turn-next' : 'turn-prev');
+    }
+
+    function renderPageMode(animDir = null) {
+        if (state.totalLines === 0 || state.viewMode !== 'page') return;
+
+        const res = measureForwardPage(state.page.startLine, state.page.startOffset);
+        state.page.nextLine = res.nextLine;
+        state.page.nextOffset = res.nextOffset;
+        state.page.hasNext = res.hasNext;
+        state.page.hasPrev = state.page.startLine > 0 || state.page.startOffset > 0;
+        state.page.endLine = res.segments.length > 0
+            ? res.segments[res.segments.length - 1].lineIdx
+            : state.page.startLine;
+
+        els.pageInner.style.height = `${res.availH}px`;
+
+        const gutterMinWidth = getGutterWidth();
+        const searchRegex = buildSearchRegex();
+        const activeMatchLineIdx = (searchRegex && state.currentMatchCursor >= 0 && state.currentMatchCursor < state.matchLineIndices.length)
+            ? state.matchLineIndices[state.currentMatchCursor]
+            : -1;
+
+        const fragment = document.createDocumentFragment();
+        res.segments.forEach(seg => {
+            const fullText = getLineText(seg.lineIdx);
+            const sliceText = fullText.slice(seg.start, seg.end);
+            const row = createRowElement(seg.lineIdx, sliceText, {
+                isContinuation: seg.isContinuation,
+                gutterMinWidth,
+                searchRegex,
+                activeMatchLineIdx,
+                fixedHeight: false
+            });
+            fragment.appendChild(row);
+        });
+
+        els.pageInner.innerHTML = '';
+        els.pageInner.appendChild(fragment);
+        triggerPageAnimation(animDir);
+        updatePageStatus();
+    }
+
+    function goToNextPage() {
+        if (state.totalLines === 0 || state.viewMode !== 'page') return;
+        if (!state.page.hasNext) {
+            showToast('마지막 페이지입니다.');
+            return;
+        }
+        state.page.history.push({ line: state.page.startLine, offset: state.page.startOffset });
+        if (state.page.history.length > MAX_PAGE_HISTORY) {
+            state.page.history.shift();
+        }
+        state.page.startLine = state.page.nextLine;
+        state.page.startOffset = state.page.nextOffset;
+        renderPageMode('next');
+        scheduleSavePosition();
+    }
+
+    function goToPrevPage() {
+        if (state.totalLines === 0 || state.viewMode !== 'page') return;
+        if (!state.page.hasPrev) {
+            showToast('첫 번째 페이지입니다.');
+            return;
+        }
+        let prevPos = null;
+        if (state.page.history.length > 0) {
+            prevPos = state.page.history.pop();
+        } else {
+            prevPos = computePrevPageStart(state.page.startLine, state.page.startOffset);
+        }
+        state.page.startLine = prevPos.line;
+        state.page.startOffset = prevPos.offset;
+        renderPageMode('prev');
+        scheduleSavePosition();
+    }
+
+    /**
+     * 읽기 방식 전환 (스크롤 <-> 책 넘김) - 현재 읽는 줄 그대로 유지
+     */
+    function switchViewMode(newMode) {
+        if (!VALID_VIEW_MODES.includes(newMode) || state.viewMode === newMode) return;
+
+        const anchorLineIdx = state.totalLines > 0 ? getCurrentTopLineIndex() : 0;
+        state.viewMode = newMode;
+        saveUserPreferences();
+        syncPreferencesUI();
+        syncViewportVisibility();
+
+        if (state.totalLines > 0) {
+            recalculateMetrics();
+            if (newMode === 'page') {
+                state.page.startLine = anchorLineIdx;
+                state.page.startOffset = 0;
+                state.page.history = [];
+                renderPageMode(null);
+            } else {
+                scrollToLine(anchorLineIdx, false);
+            }
+        }
+
+        showToast(newMode === 'page' ? '책 넘김(페이지) 모드로 전환했습니다.' : '스크롤 모드로 전환했습니다.');
+    }
+
+    /* ========================================================================
+       특정 줄로 이동 (스크롤 / 책 넘김 공용)
+       ======================================================================== */
     function scrollToLine(lineIndex, centerInView = true) {
         if (state.totalLines === 0) return;
         const clampedIdx = Math.min(state.totalLines - 1, Math.max(0, lineIndex));
 
+        if (state.viewMode === 'page') {
+            state.page.startLine = clampedIdx;
+            state.page.startOffset = 0;
+            state.page.history = [];
+            renderPageMode(null);
+            scheduleSavePosition();
+            return;
+        }
+
+        syncScrollViewportHeight();
+
         let targetLogicalY = clampedIdx === 0 && !centerInView ? 0 : getLineTopY(clampedIdx);
         if (centerInView) {
             targetLogicalY = Math.max(0, targetLogicalY - els.vsViewport.clientHeight * 0.35);
+            // 줄 경계에 정확히 맞춰 상·하단 글자 잘림 방지
+            targetLogicalY = Math.round(targetLogicalY / state.baseRowHeight) * state.baseRowHeight;
         }
 
         const maxLogicalScroll = Math.max(0, state.logicalTotalHeight - els.vsViewport.clientHeight);
@@ -3093,8 +3930,7 @@
 
         if (!query || state.totalLines === 0) {
             updateSearchUI();
-            state.lastRenderedStart = -1;
-            renderVisibleRows();
+            renderActiveView(null);
             return;
         }
 
@@ -3154,7 +3990,7 @@
 
         if (matches.length > 0) {
             if (jumpToFirst) {
-                const currentIdx = findLineIndexAtY(getLogicalScrollTop());
+                const currentIdx = getCurrentTopLineIndex();
                 let foundCursor = 0;
                 for (let m = 0; m < matches.length; m++) {
                     if (matches[m] >= currentIdx) {
@@ -3166,12 +4002,10 @@
                 scrollToLine(matches[foundCursor], true);
             } else {
                 state.currentMatchCursor = 0;
-                state.lastRenderedStart = -1;
-                renderVisibleRows();
+                renderActiveView(null);
             }
         } else {
-            state.lastRenderedStart = -1;
-            renderVisibleRows();
+            renderActiveView(null);
         }
 
         updateSearchUI();
@@ -3202,7 +4036,7 @@
         if (state.totalLines === 0) return;
         els.gotoModalSub.textContent = `1부터 ${state.totalLines.toLocaleString()} 사이의 줄 번호를 입력하세요.`;
         els.gotoModalInput.max = state.totalLines;
-        els.gotoModalInput.value = findLineIndexAtY(getLogicalScrollTop()) + 1;
+        els.gotoModalInput.value = getCurrentTopLineIndex() + 1;
         els.gotoModal.classList.remove('hidden');
         setTimeout(() => {
             els.gotoModalInput.focus();
@@ -3230,6 +4064,7 @@
        ======================================================================== */
     // 1. 가상 스크롤 이벤트 (rAF 스로틀링 + 읽은 위치 자동 저장)
     els.vsViewport.addEventListener('scroll', () => {
+        if (state.viewMode !== 'scroll') return;
         if (!state.rafPending) {
             state.rafPending = true;
             requestAnimationFrame(() => {
@@ -3249,29 +4084,140 @@
         }
     });
 
-    // 거터(줄 번호/리본) 클릭 시 북마크 즉시 토글 (이벤트 위임)
-    els.vsContent.addEventListener('click', (e) => {
+    // 거터(줄 번호/리본) 클릭 시 북마크 즉시 토글 (스크롤 & 책 넘김 공용)
+    function handleGutterClick(e) {
         const gutter = e.target.closest('.vs-gutter');
-        if (!gutter) return;
+        if (!gutter || gutter.classList.contains('is-continuation')) return false;
         const lineNum = parseInt(gutter.dataset.line, 10);
         if (!isNaN(lineNum)) {
             toggleBookmark(lineNum);
+            return true;
+        }
+        return false;
+    }
+
+    els.vsContent.addEventListener('click', (e) => {
+        handleGutterClick(e);
+    });
+
+    // 책 넘김 모드: 거터 클릭(북마크) 및 좌우 가장자리 탭 페이지 이동
+    let lastTouchHandledAt = 0;
+    els.pageStage.addEventListener('click', (e) => {
+        if (handleGutterClick(e)) return;
+        if (performance.now() - lastTouchHandledAt < 350) return;
+
+        // 텍스트 드래그 선택 중에는 페이지 넘김 방지
+        const sel = window.getSelection();
+        if (sel && sel.toString().length > 0) return;
+
+        const rect = els.pageStage.getBoundingClientRect();
+        const relX = (e.clientX - rect.left) / Math.max(1, rect.width);
+        if (relX < 0.28) {
+            goToPrevPage();
+        } else if (relX > 0.72) {
+            goToNextPage();
         }
     });
 
+    // 책 넘김 모드: 모바일/태블릿 좌우 스와이프 제스처 (+ 애니메이션 설정 연동)
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchStartTime = 0;
+    let isHorizontalSwipe = false;
+
+    els.pageStage.addEventListener('touchstart', (e) => {
+        if (e.touches.length !== 1) return;
+        if (e.target.closest('.vs-gutter')) return;
+        const t = e.touches[0];
+        touchStartX = t.clientX;
+        touchStartY = t.clientY;
+        touchStartTime = performance.now();
+        isHorizontalSwipe = false;
+        els.pageContent.style.transition = 'none';
+    }, { passive: true });
+
+    els.pageStage.addEventListener('touchmove', (e) => {
+        if (e.touches.length !== 1 || touchStartTime === 0) return;
+        const t = e.touches[0];
+        const dx = t.clientX - touchStartX;
+        const dy = t.clientY - touchStartY;
+
+        if (!isHorizontalSwipe && Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+            isHorizontalSwipe = true;
+        }
+
+        if (isHorizontalSwipe && state.pageAnimation) {
+            const blocked = (dx > 0 && !state.page.hasPrev) || (dx < 0 && !state.page.hasNext);
+            const damp = blocked ? 0.14 : 0.35;
+            const offset = Math.max(-72, Math.min(72, dx * damp));
+            els.pageContent.style.transform = `translate3d(${offset}px, 0, 0)`;
+        }
+    }, { passive: true });
+
+    els.pageStage.addEventListener('touchend', (e) => {
+        if (touchStartTime === 0) return;
+        const elapsed = performance.now() - touchStartTime;
+        const t = e.changedTouches[0];
+        const dx = t.clientX - touchStartX;
+        const dy = t.clientY - touchStartY;
+
+        if (state.pageAnimation) {
+            els.pageContent.style.transition = 'transform 0.16s ease-out';
+            els.pageContent.style.transform = '';
+        } else {
+            els.pageContent.style.transition = '';
+            els.pageContent.style.transform = '';
+        }
+
+        const wasSwipe = isHorizontalSwipe && Math.abs(dx) > 42 && Math.abs(dx) > Math.abs(dy) * 1.1 && elapsed < 700;
+        touchStartTime = 0;
+        isHorizontalSwipe = false;
+
+        if (wasSwipe) {
+            lastTouchHandledAt = performance.now();
+            if (dx < 0) {
+                goToNextPage();
+            } else {
+                goToPrevPage();
+            }
+        }
+    }, { passive: true });
+
+    els.pageStage.addEventListener('touchcancel', () => {
+        touchStartTime = 0;
+        isHorizontalSwipe = false;
+        els.pageContent.style.transition = '';
+        els.pageContent.style.transform = '';
+    }, { passive: true });
+
+    // 페이지 이동 버튼 바인딩
+    els.pagePrevEdgeBtn.addEventListener('click', goToPrevPage);
+    els.pageNextEdgeBtn.addEventListener('click', goToNextPage);
+    els.pageBarPrevBtn.addEventListener('click', goToPrevPage);
+    els.pageBarNextBtn.addEventListener('click', goToNextPage);
+
     // 2. 윈도우 리사이즈 및 ResizeObserver 기반 뷰포트 크기 변화 대응
     let resizeTimer = null;
-    function scheduleViewportReflow(widthChanged) {
+    function scheduleViewportReflow(sizeChanged) {
         if (state.totalLines === 0) return;
-        if (widthChanged && state.wordWrap) {
+        if (state.viewMode === 'page') {
             clearTimeout(resizeTimer);
             resizeTimer = setTimeout(() => {
+                recalculateMetrics();
+                state.page.history = [];
+                renderPageMode(null);
+            }, 100);
+        } else if (sizeChanged && state.wordWrap) {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                syncScrollViewportHeight();
                 recalculateMetrics();
                 state.lastRenderedStart = -1;
                 renderVisibleRows();
                 updateScrollStatus();
             }, 120);
         } else {
+            syncScrollViewportHeight();
             state.lastRenderedStart = -1;
             renderVisibleRows();
             updateScrollStatus();
@@ -3297,10 +4243,10 @@
             lastVpW = w;
             lastVpH = h;
             if (widthChanged || heightChanged) {
-                scheduleViewportReflow(widthChanged);
+                scheduleViewportReflow(widthChanged || heightChanged);
             }
         });
-        vpObserver.observe(els.vsViewport);
+        vpObserver.observe(els.dropZone);
     }
 
     // 3. 파일 열기 & 가이드 문서
@@ -3376,6 +4322,7 @@
         if (willOpen) {
             els.searchInput.focus();
         }
+        scheduleViewportReflow(true);
     });
 
     let searchDebounce = null;
@@ -3446,8 +4393,7 @@
             state.activeBookmarkLine = null;
             saveFileMetadata();
             renderBookmarkDrawer();
-            state.lastRenderedStart = -1;
-            renderVisibleRows();
+            renderActiveView(null);
             showToast('모든 북마크가 삭제되었습니다.');
         }
     });
@@ -3466,6 +4412,7 @@
     els.resumeDismissBtn.addEventListener('click', () => {
         state.pendingResumeLine = null;
         els.resumeBanner.classList.add('hidden');
+        scheduleViewportReflow(true);
     });
 
     // 9. 줄 이동 (Ctrl+G) 모달
@@ -3530,9 +4477,24 @@
     els.copyAllBtn.addEventListener('click', handleCopyAllText);
     els.mobileCopyAllBtn.addEventListener('click', handleCopyAllText);
 
-    // 11. 보기 설정 토글 & 테마 / 글꼴 / 크기 / 줄간격 / 상하·좌우 여백 / 줄번호 / 북마크표시 / 줄바꿈
+    // 11. 보기 설정 토글 & 읽기 방식 / 넘김 효과 / 테마 / 글꼴 / 크기 / 줄간격 / 여백 / 표시 옵션
     els.toggleSettingsBtn.addEventListener('click', () => {
         els.settingsBar.classList.toggle('hidden');
+        if (state.totalLines > 0) {
+            scheduleViewportReflow(true);
+        }
+    });
+
+    els.viewmodeBtns.forEach(btn => {
+        btn.addEventListener('click', () => switchViewMode(btn.dataset.viewmode));
+    });
+
+    // 페이지 전환 애니메이션 켜기/끄기
+    els.togglePageAnimBtn.addEventListener('click', () => {
+        state.pageAnimation = !state.pageAnimation;
+        els.togglePageAnimBtn.classList.toggle('active', state.pageAnimation);
+        saveUserPreferences();
+        showToast(state.pageAnimation ? '페이지 전환 애니메이션: 켜짐' : '페이지 전환 애니메이션: 꺼짐');
     });
 
     els.themeBtns.forEach(btn => {
@@ -3543,15 +4505,17 @@
         btn.addEventListener('click', () => {
             const font = btn.dataset.font;
             state.fontFamily = font;
-            els.vsViewport.classList.remove('font-sans', 'font-serif', 'font-mono');
-            els.vsViewport.classList.add(`font-${font}`);
+            [els.vsViewport, els.pageViewport].forEach(vp => {
+                vp.classList.remove('font-sans', 'font-serif', 'font-mono');
+                vp.classList.add(`font-${font}`);
+            });
             els.fontBtns.forEach(b => b.classList.toggle('active', b.dataset.font === font));
             saveUserPreferences();
 
             if (state.totalLines > 0) {
                 recalculateMetrics();
-                state.lastRenderedStart = -1;
-                renderVisibleRows();
+                state.page.history = [];
+                renderActiveView(null);
             }
         });
     });
@@ -3559,20 +4523,20 @@
     function updateFontSize(newSize) {
         state.fontSize = Math.min(32, Math.max(12, newSize));
         els.vsViewport.style.fontSize = `${state.fontSize}px`;
+        els.pageViewport.style.fontSize = `${state.fontSize}px`;
         els.fontResetBtn.textContent = `${state.fontSize}px`;
         saveUserPreferences();
 
         if (state.totalLines > 0) {
             recalculateMetrics();
-            state.lastRenderedStart = -1;
-            renderVisibleRows();
-            updateScrollStatus();
+            state.page.history = [];
+            renderActiveView(null);
         }
     }
 
     els.fontDecBtn.addEventListener('click', () => updateFontSize(state.fontSize - 1));
     els.fontIncBtn.addEventListener('click', () => updateFontSize(state.fontSize + 1));
-    els.fontResetBtn.addEventListener('click', () => updateFontSize(15));
+    els.fontResetBtn.addEventListener('click', () => updateFontSize(DEFAULT_FONT_SIZE));
 
     els.leadingBtns.forEach(btn => {
         btn.addEventListener('click', () => {
@@ -3583,9 +4547,8 @@
 
             if (state.totalLines > 0) {
                 recalculateMetrics();
-                state.lastRenderedStart = -1;
-                renderVisibleRows();
-                updateScrollStatus();
+                state.page.history = [];
+                renderActiveView(null);
             }
         });
     });
@@ -3599,15 +4562,14 @@
 
         if (state.totalLines > 0) {
             recalculateMetrics();
-            state.lastRenderedStart = -1;
-            renderVisibleRows();
-            updateScrollStatus();
+            state.page.history = [];
+            renderActiveView(null);
         }
     }
 
     els.padVDecBtn.addEventListener('click', () => updatePaddingV(state.paddingV - 4));
     els.padVIncBtn.addEventListener('click', () => updatePaddingV(state.paddingV + 4));
-    els.padVResetBtn.addEventListener('click', () => updatePaddingV(12));
+    els.padVResetBtn.addEventListener('click', () => updatePaddingV(DEFAULT_PADDING_V));
 
     // 좌우 여백 조절 (0px ~ 80px, 4px 단위)
     function updatePaddingH(newPadH) {
@@ -3617,16 +4579,15 @@
         saveUserPreferences();
 
         if (state.totalLines > 0) {
-            if (state.wordWrap) recalculateMetrics();
-            state.lastRenderedStart = -1;
-            renderVisibleRows();
-            updateScrollStatus();
+            if (state.wordWrap || state.viewMode === 'page') recalculateMetrics();
+            state.page.history = [];
+            renderActiveView(null);
         }
     }
 
     els.padHDecBtn.addEventListener('click', () => updatePaddingH(state.paddingH - 4));
     els.padHIncBtn.addEventListener('click', () => updatePaddingH(state.paddingH + 4));
-    els.padHResetBtn.addEventListener('click', () => updatePaddingH(16));
+    els.padHResetBtn.addEventListener('click', () => updatePaddingH(DEFAULT_PADDING_H));
 
     // 줄 번호 표시 토글
     els.toggleLineNumBtn.addEventListener('click', () => {
@@ -3635,9 +4596,9 @@
         saveUserPreferences();
 
         if (state.totalLines > 0) {
-            if (state.wordWrap) recalculateMetrics();
-            state.lastRenderedStart = -1;
-            renderVisibleRows();
+            if (state.wordWrap || state.viewMode === 'page') recalculateMetrics();
+            state.page.history = [];
+            renderActiveView(null);
         }
     });
 
@@ -3648,14 +4609,15 @@
         saveUserPreferences();
 
         if (state.totalLines > 0) {
-            if (state.wordWrap) recalculateMetrics();
-            state.lastRenderedStart = -1;
-            renderVisibleRows();
+            if (state.wordWrap || state.viewMode === 'page') recalculateMetrics();
+            state.page.history = [];
+            renderActiveView(null);
         }
     });
 
-    // 자동 줄바꿈 토글
+    // 자동 줄바꿈 토글 (스크롤 모드 전용)
     els.toggleWrapBtn.addEventListener('click', () => {
+        if (state.viewMode === 'page') return;
         state.wordWrap = !state.wordWrap;
         els.toggleWrapBtn.classList.toggle('active', state.wordWrap);
         els.vsViewport.classList.toggle('mode-wrap', state.wordWrap);
@@ -3669,13 +4631,15 @@
         }
     });
 
-    // 12. 맨 위로 이동 & 전역 단축키 (Ctrl+F, Ctrl+G, F2, Shift+F2, Esc)
+    // 12. 맨 위로 이동 & 전역 단축키 (Ctrl+F, Ctrl+G, F2, Shift+F2, Esc, 페이지 넘김 키)
     els.scrollTopBtn.addEventListener('click', () => {
         els.vsViewport.scrollTo({ top: 0, behavior: 'smooth' });
     });
 
     window.addEventListener('keydown', (e) => {
         const isMod = e.ctrlKey || e.metaKey;
+        const activeTag = document.activeElement ? document.activeElement.tagName : '';
+        const isTyping = activeTag === 'INPUT' || activeTag === 'TEXTAREA' || (document.activeElement && document.activeElement.isContentEditable);
 
         if (isMod && e.key.toLowerCase() === 'f') {
             e.preventDefault();
@@ -3699,6 +4663,14 @@
             } else if (state.isFullscreen) {
                 e.preventDefault();
                 exitFullscreen(true);
+            }
+        } else if (!isTyping && !isMod && state.viewMode === 'page' && state.totalLines > 0 && els.gotoModal.classList.contains('hidden')) {
+            if (e.key === 'ArrowRight' || e.key === 'PageDown' || (e.key === ' ' && !e.shiftKey)) {
+                e.preventDefault();
+                goToNextPage();
+            } else if (e.key === 'ArrowLeft' || e.key === 'PageUp' || (e.key === ' ' && e.shiftKey)) {
+                e.preventDefault();
+                goToPrevPage();
             }
         }
     });
