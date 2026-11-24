@@ -8,6 +8,12 @@
     <meta name="apple-mobile-web-app-status-bar-style" id="appleStatusBarMeta" content="default">
     <meta name="theme-color" id="themeColorMeta" content="#f8fafc">
     <title>고성능 대용량 텍스트 뷰어 (Safari & 모바일 최적화)</title>
+
+    <!-- 한글 바탕(Noto Serif KR) & 한글 고정폭(D2Coding) 웹폰트 로드 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600&display=swap" rel="stylesheet">
+
     <!-- 페이지 최초 로드 시 저장된 테마를 즉시 반영해 흰 화면 깜빡임(FOUC) 방지 -->
     <script>
         (function () {
@@ -19,7 +25,7 @@
                 var metaMap = {
                     light: { color: '#f8fafc', statusBar: 'default' },
                     sepia: { color: '#f4ecd8', statusBar: 'default' },
-                    dark:  { color: '#0b1120', statusBar: 'black-translucent' }
+                    dark:  { color: '#0b1120', statusBar: 'black' }
                 };
                 if (theme && metaMap[theme]) {
                     document.documentElement.setAttribute('data-theme', theme);
@@ -32,6 +38,15 @@
         })();
     </script>
     <style>
+        /* 한글 고정폭 폰트 (D2Coding) */
+        @font-face {
+            font-family: 'D2CodingWeb';
+            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_three@1.0/D2Coding.woff') format('woff');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+
         /* =========================================================
            1. 테마별 CSS 변수 정의 (html 루트 적용으로 Safari 여백 통일)
            ========================================================= */
@@ -144,6 +159,7 @@
             width: 100%;
             height: 100vh;
             height: 100dvh;
+            height: var(--app-height, 100dvh);
             overflow: hidden;
             overscroll-behavior: none;
             font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", "Noto Sans KR", sans-serif;
@@ -157,6 +173,7 @@
             flex-direction: column;
             height: 100vh;
             height: 100dvh;
+            height: var(--app-height, 100dvh);
             width: 100%;
             overflow: hidden;
             background-color: var(--bg-app);
@@ -177,7 +194,7 @@
         .toolbar {
             background-color: var(--bg-surface);
             border-bottom: 1px solid var(--border-color);
-            padding-top: calc(8px + env(safe-area-inset-top));
+            padding-top: max(10px, calc(8px + env(safe-area-inset-top)));
             padding-bottom: 8px;
             padding-left: calc(14px + env(safe-area-inset-left));
             padding-right: calc(14px + env(safe-area-inset-right));
@@ -812,17 +829,17 @@
             overflow-wrap: anywhere;
         }
 
-        /* 글꼴 패밀리 클래스 */
+        /* 글꼴 패밀리 클래스 (iOS Safari에서도 확실히 구분되는 한글 폰트 스택) */
         .font-sans {
             font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", "Noto Sans KR", sans-serif;
         }
 
         .font-serif {
-            font-family: "AppleMyungjo", "Batang", "바탕", "Noto Serif KR", Georgia, serif;
+            font-family: "Noto Serif KR", "AppleMyungjo", "Batang", "바탕", Georgia, serif;
         }
 
         .font-mono {
-            font-family: "D2Coding", "Nanum Gothic Coding", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-family: "D2CodingWeb", "D2Coding", "Nanum Gothic Coding", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
         }
 
         /* 검색어 하이라이트 */
@@ -865,6 +882,52 @@
             background-color: var(--bg-hover);
             color: var(--text-primary);
             transform: translateY(-2px);
+        }
+
+        /* =========================================================
+           전체화면(몰입 읽기) 모드 & 종료 플로팅 버튼
+           ========================================================= */
+        .app-shell.is-fullscreen .toolbar,
+        .app-shell.is-fullscreen .settings-bar,
+        .app-shell.is-fullscreen .mobile-search-bar,
+        .app-shell.is-fullscreen .resume-banner,
+        .app-shell.is-fullscreen .statusbar {
+            display: none !important;
+        }
+
+        .app-shell.is-fullscreen .vs-viewport {
+            padding-top: max(12px, env(safe-area-inset-top));
+            padding-bottom: max(12px, env(safe-area-inset-bottom));
+        }
+
+        .exit-fullscreen-btn {
+            position: fixed;
+            top: max(12px, calc(8px + env(safe-area-inset-top)));
+            right: calc(14px + env(safe-area-inset-right));
+            height: 36px;
+            padding: 0 13px;
+            border-radius: 999px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-surface);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 12.5px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: var(--shadow-md);
+            opacity: 0.78;
+            cursor: pointer;
+            touch-action: manipulation;
+            z-index: 60;
+            transition: opacity 0.15s, transform 0.15s;
+        }
+
+        .exit-fullscreen-btn:hover,
+        .exit-fullscreen-btn:active {
+            opacity: 1;
+            transform: scale(0.98);
         }
 
         /* =========================================================
@@ -1286,8 +1349,8 @@
 
             .toolbar {
                 flex-wrap: nowrap;
-                padding-top: calc(6px + env(safe-area-inset-top));
-                padding-bottom: 6px;
+                padding-top: max(12px, calc(8px + env(safe-area-inset-top)));
+                padding-bottom: 8px;
                 padding-left: calc(10px + env(safe-area-inset-left));
                 padding-right: calc(10px + env(safe-area-inset-right));
                 gap: 6px;
@@ -1370,7 +1433,7 @@
 </head>
 <body>
 
-<div class="app-shell">
+<div id="appShell" class="app-shell">
     <!-- =========================================================
          상단 툴바 (모바일 Safari 한 줄 컴팩트 배치)
          ========================================================= -->
@@ -1399,13 +1462,6 @@
                     <line x1="12" y1="3" x2="12" y2="15"/>
                 </svg>
                 <span>파일 열기</span>
-            </button>
-
-            <button id="genSampleBtn" class="btn hide-mobile" title="약 16MB(25만 줄) 대용량 한국어 로그/소설 샘플 생성">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-                </svg>
-                <span>16MB 샘플 생성</span>
             </button>
 
             <!-- 인코딩 선택 (데스크톱 상단 배치) -->
@@ -1474,6 +1530,16 @@
                 </svg>
                 <span class="hide-mobile">보기 설정</span>
             </button>
+
+            <!-- 전체화면(몰입 읽기) 버튼 -->
+            <button id="fullscreenBtn" class="btn btn-icon" title="전체화면 몰입 읽기 모드" aria-label="전체화면 보기">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 3 21 3 21 9"/>
+                    <polyline points="9 21 3 21 3 15"/>
+                    <line x1="21" y1="3" x2="14" y2="10"/>
+                    <line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+            </button>
         </div>
     </header>
 
@@ -1481,7 +1547,7 @@
     <div id="mobileSearchBar" class="mobile-search-bar hidden"></div>
 
     <!-- =========================================================
-         읽기 환경 설정 바 (모바일에서는 인코딩/샘플/북마크추가 포함)
+         읽기 환경 설정 바 (모바일에서는 인코딩/북마크추가/전체복사 포함)
          ========================================================= -->
     <div id="settingsBar" class="settings-bar hidden">
         <!-- 모바일 전용 빠른 도구 -->
@@ -1492,7 +1558,6 @@
             </div>
             <div style="display:flex; gap:6px; flex-wrap:wrap;">
                 <button id="mobileQuickBookmarkBtn" class="btn btn-sm" disabled>현재 줄 북마크</button>
-                <button id="mobileGenSampleBtn" class="btn btn-sm">16MB 샘플</button>
                 <button id="mobileCopyAllBtn" class="btn btn-sm">전체 복사</button>
             </div>
         </div>
@@ -1607,8 +1672,7 @@
                     </p>
                     <div class="empty-actions">
                         <button id="emptyOpenBtn" class="btn btn-primary">파일 앱에서 열기</button>
-                        <button id="emptySmallSampleBtn" class="btn">미니 샘플 열기</button>
-                        <button id="emptySampleBtn" class="btn">16MB(25만 줄) 테스트</button>
+                        <button id="emptySmallSampleBtn" class="btn">가이드 문서 열기</button>
                     </div>
                 </div>
             </div>
@@ -1697,6 +1761,17 @@
         </div>
     </footer>
 
+    <!-- 전체화면 종료 플로팅 버튼 -->
+    <button id="exitFullscreenBtn" class="exit-fullscreen-btn hidden" title="전체화면 종료 (Esc)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="4 14 10 14 10 20"/>
+            <polyline points="20 10 14 10 14 4"/>
+            <line x1="14" y1="10" x2="21" y2="3"/>
+            <line x1="3" y1="21" x2="10" y2="14"/>
+        </svg>
+        <span>전체화면 종료</span>
+    </button>
+
     <!-- 줄 이동 (Ctrl+G) 모달 -->
     <div id="gotoModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="gotoModalTitle">
         <div class="modal-card">
@@ -1745,7 +1820,7 @@
     const THEME_META = {
         light: { color: '#f8fafc', statusBar: 'default' },
         sepia: { color: '#f4ecd8', statusBar: 'default' },
-        dark:  { color: '#0b1120', statusBar: 'black-translucent' }
+        dark:  { color: '#0b1120', statusBar: 'black' }
     };
 
     // 전역 상태
@@ -1767,6 +1842,7 @@
         lineHeightRatio: 1.75,    // 줄 간격 배수
         showLineNumbers: true,    // 줄 번호 표시 여부
         wordWrap: false,          // 자동 줄바꿈 여부
+        isFullscreen: false,      // 전체화면(몰입 읽기) 모드 여부
 
         // 가상 스크롤 메트릭
         baseRowHeight: 26,
@@ -1798,6 +1874,7 @@
 
     // DOM 요소 참조
     const els = {
+        appShell: document.getElementById('appShell'),
         themeColorMeta: document.getElementById('themeColorMeta'),
         appleStatusBarMeta: document.getElementById('appleStatusBarMeta'),
 
@@ -1805,9 +1882,6 @@
         openFileBtn: document.getElementById('openFileBtn'),
         emptyOpenBtn: document.getElementById('emptyOpenBtn'),
         emptySmallSampleBtn: document.getElementById('emptySmallSampleBtn'),
-        genSampleBtn: document.getElementById('genSampleBtn'),
-        mobileGenSampleBtn: document.getElementById('mobileGenSampleBtn'),
-        emptySampleBtn: document.getElementById('emptySampleBtn'),
         encodingBtns: document.querySelectorAll('.encoding-btn'),
 
         desktopSearchSlot: document.getElementById('desktopSearchSlot'),
@@ -1829,6 +1903,8 @@
         mobileCopyAllBtn: document.getElementById('mobileCopyAllBtn'),
         toggleSettingsBtn: document.getElementById('toggleSettingsBtn'),
         settingsBar: document.getElementById('settingsBar'),
+        fullscreenBtn: document.getElementById('fullscreenBtn'),
+        exitFullscreenBtn: document.getElementById('exitFullscreenBtn'),
 
         themeBtns: document.querySelectorAll('.theme-btn'),
         fontBtns: document.querySelectorAll('.font-btn'),
@@ -1882,6 +1958,79 @@
 
         toast: document.getElementById('toast')
     };
+
+    /* ========================================================================
+       전체화면(몰입 읽기) 모드 제어 (iPhone Safari + 데스크톱/iPad 네이티브 공용)
+       ======================================================================== */
+    function enterFullscreen() {
+        if (state.isFullscreen) return;
+        state.isFullscreen = true;
+        els.appShell.classList.add('is-fullscreen');
+        els.exitFullscreenBtn.classList.remove('hidden');
+
+        // 네이티브 Fullscreen API 지원 브라우저(macOS Safari, iPadOS, Chrome 등)에서는 함께 요청
+        const docEl = document.documentElement;
+        if (document.fullscreenEnabled || document.webkitFullscreenEnabled) {
+            try {
+                if (docEl.requestFullscreen) {
+                    docEl.requestFullscreen().catch(() => {});
+                } else if (docEl.webkitRequestFullscreen) {
+                    docEl.webkitRequestFullscreen();
+                }
+            } catch (e) {}
+        }
+
+        scheduleViewportReflow(false);
+    }
+
+    function exitFullscreen(exitNative = true) {
+        if (!state.isFullscreen) return;
+        state.isFullscreen = false;
+        els.appShell.classList.remove('is-fullscreen');
+        els.exitFullscreenBtn.classList.add('hidden');
+
+        if (exitNative) {
+            try {
+                if (document.fullscreenElement && document.exitFullscreen) {
+                    document.exitFullscreen().catch(() => {});
+                } else if (document.webkitFullscreenElement && document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
+            } catch (e) {}
+        }
+
+        scheduleViewportReflow(false);
+    }
+
+    function handleNativeFullscreenChange() {
+        const isNativeFull = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+        if (!isNativeFull && state.isFullscreen) {
+            exitFullscreen(false);
+        }
+    }
+
+    document.addEventListener('fullscreenchange', handleNativeFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleNativeFullscreenChange);
+
+    /* ========================================================================
+       iOS Safari / PWA 동적 뷰포트 높이 동기화 (상단 툴바 밀림 방지)
+       ======================================================================== */
+    function syncVisualViewportHeight() {
+        if (window.visualViewport) {
+            const h = Math.round(window.visualViewport.height);
+            if (h > 0) {
+                document.documentElement.style.setProperty('--app-height', `${h}px`);
+            }
+            if (window.scrollY !== 0 || window.scrollX !== 0) {
+                window.scrollTo(0, 0);
+            }
+        }
+    }
+    syncVisualViewportHeight();
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', syncVisualViewportHeight);
+        window.visualViewport.addEventListener('scroll', syncVisualViewportHeight);
+    }
 
     /* ========================================================================
        사용자 보기 설정 localStorage 자동 저장 & 복원
@@ -2496,74 +2645,36 @@
     }
 
     /**
-     * 미니 샘플 문서 생성 (빠른 기능 테스트용)
+     * 가이드 문서 생성 (기능·글꼴·전체화면 테스트용)
      */
     function generateMiniSample() {
         const sampleText = [
-            '=== 고성능 한국어 텍스트 뷰어 안내 문서 ===',
+            '=== 고성능 한국어 텍스트 뷰어 가이드 문서 ===',
             '',
             '1. 가상 스크롤(Virtual Scrolling) 렌더링 엔진',
             '   화면에 보이는 영역과 위아래 버퍼(±18줄)만 DOM으로 생성하여',
             '   16MB~100MB 이상의 대용량 소설, 로그, CSV 파일도 끊김 없이 탐색합니다.',
             '',
-            '2. 한글 인코딩 즉시 전환 (UTF-8 / EUC-KR)',
-            '   원본 파일 참조(Blob)를 통해 상단 또는 보기 설정에서 UTF-8과 EUC-KR을',
-            '   메모리 낭비 없이 즉시 전환할 수 있습니다.',
+            '2. 한글 글꼴 3종 지원 (고딕 / 바탕 / 고정폭)',
+            '   보기 설정에서 고딕(산세리프), 바탕(Noto Serif KR 명조), 고정폭(D2Coding)을',
+            '   전환하면 iPhone·iPad Safari에서도 한글 서체가 즉시 바뀝니다.',
+            '   영문/숫자 정렬 테스트: ABCDEFG 1234567 | 가나다라마바사 1234567',
             '',
-            '3. 보기 설정·북마크·읽은 위치 자동 저장',
-            '   테마, 글꼴, 크기, 줄간격, 줄 번호, 자동 줄바꿈, 인코딩 설정은',
-            '   사이트를 닫았다가 다시 열어도 그대로 복원됩니다.',
+            '3. 전체화면(몰입 읽기) 모드',
+            '   상단 우측 전체화면 아이콘을 누르면 모든 UI 바가 숨겨지고 본문만 표시됩니다.',
             '',
-            '4. iPhone · iPad · Mac Safari 완벽 최적화',
-            '   Safe Area 여백, 100dvh 동적 뷰포트, 테마별 theme-color 동기화,',
-            '   입력창 자동 확대 방지(16px), 모바일 바텀 시트 북마크 패널을 지원합니다.'
+            '4. 보기 설정·북마크·읽은 위치 자동 저장',
+            '   테마, 글꼴, 크기, 줄간격, 줄 번호, 자동 줄바꿈, 인코딩 설정과',
+            '   파일별 북마크 및 마지막 읽은 위치는 브라우저에 자동 저장됩니다.'
         ].join('\n');
 
         const blob = new Blob([sampleText], { type: 'text/plain;charset=utf-8' });
         state.fileBlob = blob;
-        state.fileName = '가이드_미니샘플.txt';
+        state.fileName = '가이드_문서.txt';
         state.fileSize = blob.size;
         state.encoding = 'utf-8';
         els.encodingBtns.forEach(b => b.classList.toggle('active', b.dataset.encoding === 'utf-8'));
         decodeAndIndexBlob(true, true);
-    }
-
-    /**
-     * 16MB (250,000줄) 벤치마크용 대용량 한국어 테스트 파일 생성기
-     */
-    function generateLargeSample() {
-        setLoading(true, '16MB(250,000줄) 대용량 한국어 테스트 데이터 생성 중...');
-
-        requestAnimationFrame(() => {
-            setTimeout(() => {
-                const targetLines = 250000;
-                const templates = [
-                    '[INFO] 2026-11-24 20:45:12.401 [worker-04] 대용량 텍스트 스트림 청크 파싱 완료 - 메모리 점유율 정상 범위 유지 중입니다.',
-                    '[STORY] 늦가을 밤바다 위로 은빛 윤슬이 부서지고, 오래된 등대 불빛은 수평선 너머의 항해자들에게 조용히 길을 안내하고 있었다.',
-                    '[WARN] 2026-11-24 20:45:13.118 [cache-sync] 응답 지연 감지(42ms): 가상 스크롤 뷰포트 버퍼링을 통해 60fps 프레임을 방어합니다.',
-                    '[DATA] 사용자_ID=KR_904821 | 등급=VIP | 최근접속=경기도 화성시 | 누적조회수=1,284,920회 | 인코딩=UTF-8 검증 통과.',
-                    '[ERROR] 2026-11-24 20:45:14.892 [gateway-kr] 일시적 패킷 재전송 발생 (코드: E_TIMEOUT_RETRY) - 자동 복구 시퀀스가 실행되었습니다.'
-                ];
-
-                const chunks = new Array(targetLines);
-                for (let i = 0; i < targetLines; i++) {
-                    const lineNo = String(i + 1).padStart(6, '0');
-                    chunks[i] = `L${lineNo} | ${templates[i % templates.length]}`;
-                }
-
-                const blob = new Blob([chunks.join('\n')], { type: 'text/plain;charset=utf-8' });
-                state.fileBlob = blob;
-                state.fileName = 'benchmark_sample_16MB.txt';
-                state.fileSize = blob.size;
-                state.encoding = 'utf-8';
-
-                els.encodingBtns.forEach(b => {
-                    b.classList.toggle('active', b.dataset.encoding === 'utf-8');
-                });
-
-                decodeAndIndexBlob(true, true);
-            }, 30);
-        });
     }
 
     /* ========================================================================
@@ -2581,19 +2692,19 @@
             if (code === 9) { // \t
                 em += isMono ? 2.4 : 1.6;
             } else if (code === 32) { // space
-                em += isMono ? 0.6 : 0.3;
+                em += isMono ? 0.52 : 0.3;
             } else if (code < 128) { // ASCII
                 if (isMono) {
-                    em += 0.6;
+                    em += 0.52;
                 } else if (code >= 65 && code <= 90) {
                     em += 0.7;
                 } else {
                     em += 0.56;
                 }
             } else if (code >= 0x1100) { // 한글, 한자, 전각 기호, 이모지
-                em += isMono ? 1.05 : 1.0;
+                em += isMono ? 1.04 : 1.0;
             } else {
-                em += isMono ? 0.6 : 0.65;
+                em += isMono ? 0.55 : 0.65;
             }
         }
         return em;
@@ -2609,10 +2720,9 @@
             state.prefixHeights = null;
             state.logicalTotalHeight = state.totalLines * state.baseRowHeight;
         } else {
-            const gutterSpace = getGutterWidth() + 12; // gutter min-width + margin-right
-            const rowChrome = 28; // 좌우 패딩 + 보더
+            const gutterSpace = getGutterWidth() + 12;
+            const rowChrome = 28;
             const rawTextWidth = els.vsViewport.clientWidth - gutterSpace - rowChrome;
-            // 단어 경계 줄바꿈 오차를 고려한 보수적 유효 너비
             const effectiveWidthPx = Math.max(120, rawTextWidth - state.fontSize * 0.8);
             const isMono = state.fontFamily === 'mono';
 
@@ -2627,7 +2737,6 @@
                 prefix[i + 1] = acc;
             }
             state.prefixHeights = prefix;
-            // 하단 여유 패딩을 더해 OS별 폰트 메트릭 미세 차이로 인한 끝줄 잘림 방지
             state.logicalTotalHeight = acc + state.baseRowHeight * 2;
         }
 
@@ -3040,6 +3149,7 @@
     }
 
     window.addEventListener('resize', () => {
+        syncVisualViewportHeight();
         syncResponsiveLayout();
         scheduleViewportReflow(true);
     });
@@ -3063,7 +3173,7 @@
         vpObserver.observe(els.vsViewport);
     }
 
-    // 3. 파일 열기 & 샘플 생성
+    // 3. 파일 열기 & 가이드 문서
     els.openFileBtn.addEventListener('click', () => els.fileInput.click());
     els.emptyOpenBtn.addEventListener('click', () => els.fileInput.click());
 
@@ -3074,9 +3184,10 @@
     });
 
     els.emptySmallSampleBtn.addEventListener('click', generateMiniSample);
-    els.genSampleBtn.addEventListener('click', generateLargeSample);
-    els.mobileGenSampleBtn.addEventListener('click', generateLargeSample);
-    els.emptySampleBtn.addEventListener('click', generateLargeSample);
+
+    // 전체화면 진입 & 종료 버튼
+    els.fullscreenBtn.addEventListener('click', enterFullscreen);
+    els.exitFullscreenBtn.addEventListener('click', () => exitFullscreen(true));
 
     // 4. 드래그 앤 드롭
     let dragCounter = 0;
@@ -3383,7 +3494,7 @@
         }
     });
 
-    // 12. 맨 위로 이동 & 전역 단축키 (Ctrl+F, Ctrl+G, Ctrl+B, F2, Shift+F2)
+    // 12. 맨 위로 이동 & 전역 단축키 (Ctrl+F, Ctrl+G, Ctrl+B, F2, Shift+F2, Esc)
     els.scrollTopBtn.addEventListener('click', () => {
         els.vsViewport.scrollTo({ top: 0, behavior: 'smooth' });
     });
@@ -3393,6 +3504,7 @@
 
         if (isMod && e.key.toLowerCase() === 'f') {
             e.preventDefault();
+            if (state.isFullscreen) exitFullscreen(true);
             if (window.innerWidth <= 768) {
                 els.mobileSearchBar.classList.remove('hidden');
                 els.toggleMobileSearchBtn.classList.add('active');
@@ -3408,9 +3520,14 @@
         } else if (e.key === 'F2') {
             e.preventDefault();
             navigateBookmark(e.shiftKey ? -1 : 1);
-        } else if (e.key === 'Escape' && !els.gotoModal.classList.contains('hidden')) {
-            e.preventDefault();
-            closeGotoModal();
+        } else if (e.key === 'Escape') {
+            if (!els.gotoModal.classList.contains('hidden')) {
+                e.preventDefault();
+                closeGotoModal();
+            } else if (state.isFullscreen) {
+                e.preventDefault();
+                exitFullscreen(true);
+            }
         }
     });
 
